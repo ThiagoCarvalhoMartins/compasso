@@ -1,0 +1,24 @@
+{
+  "name": "compasso",
+  "private": true,
+  "description": "Compasso: Agenda em Ritmo — monorepo (web, admin, api)",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter ./apps/** dev",
+    "dev:web": "pnpm --filter @compasso/web dev",
+    "dev:admin": "pnpm --filter @compasso/admin dev",
+    "dev:api": "pnpm --filter @compasso/api dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @compasso/api db:generate",
+    "db:migrate": "pnpm --filter @compasso/api db:migrate",
+    "db:seed": "pnpm --filter @compasso/api db:seed"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

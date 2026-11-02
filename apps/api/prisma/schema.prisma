@@ -1,0 +1,197 @@
+// Modelo de dados do MVP. `prisma migrate` cria o banco e as tabelas na primeira execução.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  SUPPORT
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  DELETED
+}
+
+enum Recurrence {
+  ONCE
+  REPEAT
+}
+
+enum BlockLogStatus {
+  DONE
+  PARTIAL
+  SKIPPED
+}
+
+model User {
+  id              String     @id @default(cuid())
+  name            String     @db.VarChar(120)
+  email           String     @unique @db.VarChar(191)
+  passwordHash    String?    @map("password_hash")
+  googleId        String?    @unique @map("google_id") @db.VarChar(64)
+  birthDate       DateTime?  @map("birth_date") @db.Date
+  avatarUrl       String?    @map("avatar_url") @db.VarChar(500)
+  timezone        String     @default("America/Sao_Paulo") @db.VarChar(64)
+  role            Role       @default(USER)
+  status          UserStatus @default(ACTIVE)
+  emailVerifiedAt DateTime?  @map("email_verified_at")
+  lastLoginAt     DateTime?  @map("last_login_at")
+  deletedAt       DateTime?  @map("deleted_at")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  settings      UserSettings?
+  categories    Category[]
+  blocks        Block[]
+  blockLogs     BlockLog[]
+  qpSessions    QpSession[]
+  refreshTokens RefreshToken[]
+  activity      UserActivity[]
+  auditActions  AuditLog[]     @relation("AuditAdmin")
+  auditTargets  AuditLog[]     @relation("AuditTarget")
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model UserSettings {
+  userId            String  @id @map("user_id")
+  alertsEnabled     Boolean @default(true) @map("alerts_enabled")
+  alertSound        String  @default("sino") @map("alert_sound") @db.VarChar(20)
+  alertVolume       Float   @default(0.7) @map("alert_volume")
+  endAlertMinutes   Int     @default(5) @map("end_alert_minutes")
+  /// 10, 15, 20 ou 30; nulo até a primeira escolha (RF05.1)
+  qpDurationSeconds Int?    @map("qp_duration_seconds")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model Category {
+  id     String  @id @default(cuid())
+  /// nulo = categoria padrão do sistema
+  userId String? @map("user_id")
+  name   String  @db.VarChar(60)
+  color  String  @db.Char(7)
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blocks Block[]
+
+  @@index([userId])
+  @@map("categories")
+}
+
+model Block {
+  id             String     @id @default(cuid())
+  userId         String     @map("user_id")
+  categoryId     String?    @map("category_id")
+  title          String     @db.VarChar(120)
+  description    String?    @db.Text
+  recurrence     Recurrence
+  /// Apenas para ONCE
+  date           DateTime?  @db.Date
+  /// Apenas para REPEAT: dias da semana separados por vírgula (0 = domingo)
+  repeatWeekdays String?    @map("repeat_weekdays") @db.VarChar(13)
+  /// Apenas para REPEAT
+  startsOn       DateTime?  @map("starts_on") @db.Date
+  /// Hora local do usuário (RN09)
+  startTime      DateTime   @map("start_time") @db.Time(0)
+  endTime        DateTime   @map("end_time") @db.Time(0)
+  color          String     @db.Char(7)
+  isOneThing     Boolean    @default(false) @map("is_one_thing")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  logs     BlockLog[]
+
+  @@index([userId, recurrence])
+  @@index([userId, date])
+  @@map("blocks")
+}
+
+model BlockLog {
+  id      String         @id @default(cuid())
+  blockId String         @map("block_id")
+  userId  String         @map("user_id")
+  date    DateTime       @db.Date
+  status  BlockLogStatus
+  notedAt DateTime       @default(now()) @map("noted_at")
+
+  block Block @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([blockId, date])
+  @@index([userId, date])
+  @@map("block_logs")
+}
+
+model QpSession {
+  id             String    @id @default(cuid())
+  /// Fica nulo após a exclusão da conta: a métrica é mantida de forma anônima (RN13)
+  userId         String?   @map("user_id")
+  startedAt      DateTime  @map("started_at")
+  endedAt        DateTime? @map("ended_at")
+  plannedSeconds Int       @map("planned_seconds")
+  actualSeconds  Int?      @map("actual_seconds")
+  completed      Boolean   @default(false)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, startedAt])
+  @@index([startedAt])
+  @@map("qp_sessions")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash") @db.Char(64)
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  userAgent String?   @map("user_agent") @db.VarChar(255)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+/// Um registro por usuário por dia em que abriu a tela Compasso (DAU/WAU/MAU e retenção — RF08).
+model UserActivity {
+  userId String   @map("user_id")
+  date   DateTime @db.Date
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, date])
+  @@index([date])
+  @@map("user_activity")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  adminId      String   @map("admin_id")
+  action       String   @db.VarChar(60)
+  targetUserId String?  @map("target_user_id")
+  metadata     Json?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  admin      User  @relation("AuditAdmin", fields: [adminId], references: [id])
+  targetUser User? @relation("AuditTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}

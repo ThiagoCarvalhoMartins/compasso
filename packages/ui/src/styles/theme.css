@@ -1,0 +1,107 @@
+/*
+ * Tema do Compasso para shadcn/ui + Tailwind CSS v4.
+ * Caderno bem diagramado: fundo creme, pastéis de baixa saturação, texto grafite.
+ * Uso nos apps:  @import "tailwindcss";  @import "@compasso/ui/theme.css";
+ */
+@source "../components";
+
+:root {
+  --background: #faf7f2; /* Papel creme */
+  --foreground: #3d3a36; /* Grafite suave */
+  --card: #fffdf9; /* Branco quente */
+  --card-foreground: #3d3a36;
+  --popover: #fffdf9;
+  --popover-foreground: #3d3a36;
+  --primary: #a8c3a0; /* Sálvia — ações e marcador do agora */
+  --primary-foreground: #3d3a36; /* texto escuro sobre pastel (contraste AA) */
+  --primary-strong: #5f7f57; /* traços finos e foco sobre o creme */
+  --secondary: #c7bedf; /* Lavanda — Repetições QP */
+  --secondary-foreground: #3d3a36;
+  --muted: #f1ece4;
+  --muted-foreground: #6f6961; /* Cinza quente escurecido para passar AA em texto pequeno */
+  --subtle-foreground: #8a847b; /* Cinza quente da paleta, para textos grandes/decorativos */
+  --accent: #f3e1a6; /* Amarelo manteiga — aviso de 5 min */
+  --accent-foreground: #3d3a36;
+  --destructive: #d99a8a; /* Terracota suave */
+  --destructive-foreground: #3d3a36;
+  --border: #e8e1d6;
+  --input: #e2dacd;
+  --ring: #5f7f57;
+  --radius: 14px;
+
+  --block-trabalho: #b9d3e3;
+  --block-estudo: #f4c9b0;
+  --block-saude: #bfe3d0;
+  --block-pessoal: #ebc3c8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-strong: var(--primary-strong);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 2px);
+
+  --font-serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --shadow-soft: 0 1px 2px rgb(61 58 54 / 0.04), 0 2px 8px rgb(61 58 54 / 0.03);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "tnum" 1, "cv11" 1; /* números tabulares para horários e contadores */
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Animações lentas e suaves; respeitam quem prefere menos movimento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}

@@ -1,0 +1,17 @@
+# MySQL local para desenvolvimento (em produção: Azure Database for MySQL Flexible Server).
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: compasso
+      MYSQL_USER: compasso
+      MYSQL_PASSWORD: compasso
+      MYSQL_ROOT_PASSWORD: compasso-root
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql-init.sql:/docker-entrypoint-initdb.d/01-grants.sql:ro
+
+volumes:
+  mysql-data:

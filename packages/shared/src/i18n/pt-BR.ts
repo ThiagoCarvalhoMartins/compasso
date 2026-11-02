@@ -1,0 +1,33 @@
+/** RNF13: textos centralizados em português do Brasil. */
+export const ptBR = {
+  "app.name": "Compasso",
+  "app.fullName": "Compasso: Agenda em Ritmo",
+  "validation.required": "Campo obrigatório.",
+  "validation.email": "Informe um e-mail válido.",
+  "validation.password": "A senha precisa ter no mínimo 8 caracteres, com letras e números.",
+  "validation.minAge": "É preciso ter pelo menos 13 anos para usar o Compasso.",
+  "validation.date": "Informe uma data válida.",
+  "validation.time": "Use o formato HH:MM.",
+  "validation.consent": "É preciso aceitar a política de privacidade.",
+  "block.endAfterStart": "O fim precisa ser depois do início. Blocos não atravessam a meia-noite: divida em dois.",
+  "block.minDuration": "O bloco precisa durar pelo menos 5 minutos.",
+  "block.dateRequired": "Escolha a data do bloco.",
+  "block.weekdaysRequired": "Marque pelo menos um dia da semana.",
+  "block.pastDate": "Blocos de um dia só podem ser criados para hoje ou datas futuras.",
+  "block.overlap": "Este horário se sobrepõe ao bloco \"{title}\" ({start}–{end}).",
+  "block.oneThingTaken": "Já existe \"A Única Coisa\" neste dia: \"{title}\".",
+  "qp.invalidDuration": "Escolha 10, 15, 20 ou 30 segundos.",
+  "auth.invalidCredentials": "E-mail ou senha incorretos.",
+  "auth.emailTaken": "Já existe uma conta com este e-mail.",
+  "auth.emailNotVerified": "Confirme seu e-mail antes do primeiro acesso.",
+  "auth.blocked": "Sua conta está bloqueada. Fale com o suporte.",
+  "auth.invalidToken": "Link inválido ou expirado.",
+  "auth.needsBirthDate": "Informe sua data de nascimento para concluir o cadastro.",
+  "auth.unauthorized": "Sessão expirada. Entre novamente.",
+  "auth.forbidden": "Você não tem permissão para esta ação.",
+  "error.notFound": "Não encontrado.",
+  "error.generic": "Algo deu errado. Tente novamente.",
+  "error.tooMany": "Muitas tentativas. Aguarde alguns minutos.",
+} as const;
+
+export type MessageKey = keyof typeof ptBR;
