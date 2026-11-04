@@ -17,8 +17,11 @@ export async function listUserBlocks(userId: string): Promise<BlockDTO[]> {
   return blocks.map(toBlockDTO);
 }
 
-/** Normaliza a entrada: cada recorrência guarda só os campos que usa. */
-export function normalizeBlock(input: BlockInput): Omit<BlockDTO, "id"> {
+/**
+ * Normaliza a entrada: cada recorrência guarda só os campos que usa.
+ * Ao editar, `current` preserva os cortes da série, que não fazem parte do formulário.
+ */
+export function normalizeBlock(input: BlockInput, current?: BlockDTO): Omit<BlockDTO, "id"> {
   const isOnce = input.recurrence === "ONCE";
   return {
     title: input.title,
@@ -29,6 +32,8 @@ export function normalizeBlock(input: BlockInput): Omit<BlockDTO, "id"> {
     date: isOnce ? input.date! : null,
     repeatWeekdays: isOnce ? [] : [...new Set(input.repeatWeekdays)].sort(),
     startsOn: isOnce ? null : input.startsOn!,
+    endsOn: isOnce ? null : (current?.endsOn ?? null),
+    excludedDates: isOnce ? [] : (current?.excludedDates ?? []),
     startTime: input.startTime,
     endTime: input.endTime,
     isOneThing: input.isOneThing,
@@ -67,6 +72,8 @@ export function toBlockData(block: Omit<BlockDTO, "id">) {
     date: block.date ? toDbDate(block.date) : null,
     repeatWeekdays: block.repeatWeekdays.length ? serializeWeekdays(block.repeatWeekdays) : null,
     startsOn: block.startsOn ? toDbDate(block.startsOn) : null,
+    endsOn: block.endsOn ? toDbDate(block.endsOn) : null,
+    excludedDates: block.excludedDates.length ? block.excludedDates.join(",") : null,
     startTime: toDbTime(block.startTime),
     endTime: toDbTime(block.endTime),
     isOneThing: block.isOneThing,

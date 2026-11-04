@@ -33,6 +33,8 @@ export const toBlockDTO = (b: Block): BlockDTO => ({
   date: b.date ? fromDbDate(b.date) : null,
   repeatWeekdays: parseWeekdays(b.repeatWeekdays),
   startsOn: b.startsOn ? fromDbDate(b.startsOn) : null,
+  endsOn: b.endsOn ? fromDbDate(b.endsOn) : null,
+  excludedDates: b.excludedDates ? b.excludedDates.split(",") : [],
   startTime: fromDbTime(b.startTime),
   endTime: fromDbTime(b.endTime),
   color: b.color,

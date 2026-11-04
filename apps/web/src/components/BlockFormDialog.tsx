@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Trash2 } from "lucide-react";
-import { BLOCK_COLORS, blockInputSchema, WEEKDAYS, type BlockDTO, type CategoryDTO } from "@compasso/shared";
+import {
+  BLOCK_COLORS,
+  blockInputSchema,
+  WEEKDAYS,
+  type BlockDeleteScope,
+  type BlockDTO,
+  type CategoryDTO,
+} from "@compasso/shared";
 import {
   ApiError,
   Button,
@@ -21,7 +28,7 @@ import {
   toast,
 } from "@compasso/ui";
 import { api } from "../lib/api";
-import { WEEKDAY_LABELS } from "../lib/time";
+import { WEEKDAY_LABELS, formatShortDate } from "../lib/time";
 
 interface FormValues {
   title: string;
@@ -37,7 +44,11 @@ interface FormValues {
   isOneThing: boolean;
 }
 
-export type BlockDraft = Partial<BlockDTO> & { date?: string | null };
+export type BlockDraft = Partial<BlockDTO> & {
+  date?: string | null;
+  /** Dia em que o bloco recorrente foi aberto na agenda: referência para excluir só parte da série. */
+  occurrenceDate?: string;
+};
 
 const toForm = (draft: BlockDraft, defaultDate: string): FormValues => ({
   title: draft.title ?? "",
@@ -77,12 +88,14 @@ export function BlockFormDialog({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [askDeleteScope, setAskDeleteScope] = useState(false);
 
   useEffect(() => {
     if (open) {
       reset(toForm(draft, defaultDate));
       setErrors({});
       setFormError(null);
+      setAskDeleteScope(false);
     }
   }, [open, draft, defaultDate, reset]);
 
@@ -106,10 +119,20 @@ export function BlockFormDialog({
   });
 
   const remove = useMutation({
-    mutationFn: () => api.del(`/blocks/${draft.id}`),
-    onSuccess: () => done("Bloco excluído."),
-    onError: (e: Error) => setFormError(e.message),
+    mutationFn: (scope?: BlockDeleteScope) =>
+      api.del(scope ? `/blocks/${draft.id}?scope=${scope}&date=${draft.occurrenceDate}` : `/blocks/${draft.id}`),
+    onSuccess: (_, scope) =>
+      done(scope === "following" ? "Bloco excluído deste dia em diante." : scope === "single" ? "Bloco excluído neste dia." : "Bloco excluído."),
+    onError: (e: Error) => {
+      setAskDeleteScope(false);
+      setFormError(e.message);
+    },
   });
+
+  const onDelete = () => {
+    if (draft.recurrence === "REPEAT" && draft.occurrenceDate) setAskDeleteScope(true);
+    else remove.mutate(undefined);
+  };
 
   const onSubmit = handleSubmit((v) => {
     const payload = {
@@ -279,7 +302,7 @@ export function BlockFormDialog({
           <DialogFooter className="sm:justify-between">
             {editing ? (
               <div className="flex gap-2">
-                <Button type="button" variant="ghost" onClick={() => remove.mutate()} disabled={remove.isPending}>
+                <Button type="button" variant="ghost" onClick={onDelete} disabled={remove.isPending}>
                   <Trash2 aria-hidden /> Excluir
                 </Button>
               </div>
@@ -291,6 +314,26 @@ export function BlockFormDialog({
             </Button>
           </DialogFooter>
         </form>
+
+        <Dialog open={askDeleteScope} onOpenChange={setAskDeleteScope}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Excluir bloco recorrente</DialogTitle>
+              <DialogDescription>"{draft.title}" se repete. O que você quer excluir?</DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-2">
+              <Button variant="outline" disabled={remove.isPending} onClick={() => remove.mutate("single")}>
+                Apenas este ({draft.occurrenceDate && formatShortDate(draft.occurrenceDate)})
+              </Button>
+              <Button variant="outline" disabled={remove.isPending} onClick={() => remove.mutate("following")}>
+                Este e todos os seguintes
+              </Button>
+              <Button variant="ghost" disabled={remove.isPending} onClick={() => setAskDeleteScope(false)}>
+                Cancelar
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );

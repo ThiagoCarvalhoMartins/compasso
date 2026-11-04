@@ -5,7 +5,7 @@ import type { BlockDTO } from "./types";
 export type BlockLike = Pick<
   BlockDTO,
   "recurrence" | "date" | "repeatWeekdays" | "startsOn" | "startTime" | "endTime"
-> & { id?: string; title?: string; isOneThing?: boolean };
+> & { id?: string; title?: string; isOneThing?: boolean; endsOn?: string | null; excludedDates?: string[] };
 
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -87,14 +87,27 @@ export function validateBlockTimes(startTime: string, endTime: string): BlockTim
   return null;
 }
 
-/** O bloco vale nesta data? (ONCE: data exata; REPEAT: dia da semana marcado a partir de starts_on — RN16.) */
+/**
+ * O bloco vale nesta data? (ONCE: data exata; REPEAT: dia da semana marcado a partir de starts_on — RN16 —
+ * até ends_on, se houver, e fora dos dias excluídos individualmente.)
+ */
 export function blockAppliesOn(block: BlockLike, date: string): boolean {
   if (block.recurrence === "ONCE") return block.date === date;
   return (
     !!block.startsOn &&
     block.startsOn <= date &&
-    block.repeatWeekdays.includes(weekdayOf(date))
+    (!block.endsOn || date <= block.endsOn) &&
+    block.repeatWeekdays.includes(weekdayOf(date)) &&
+    !block.excludedDates?.includes(date)
   );
+}
+
+/** A série ainda acontece em algum dia? Sem término, sempre: as exclusões são finitas. */
+export function seriesHasOccurrences(block: BlockLike): boolean {
+  if (block.recurrence === "ONCE") return true;
+  if (!block.startsOn || !block.repeatWeekdays.length) return false;
+  if (!block.endsOn) return true;
+  return dateRange(block.startsOn, block.endsOn).some((d) => blockAppliesOn(block, d));
 }
 
 /** Monta o dia: recorrentes que valem na data + blocos ONCE da data, ordenados pelo início. */
@@ -109,8 +122,12 @@ export function blocksShareADay(a: BlockLike, b: BlockLike): boolean {
   if (a.recurrence === "ONCE" && b.recurrence === "ONCE") return a.date === b.date;
   if (a.recurrence === "ONCE") return !!a.date && blockAppliesOn(b, a.date);
   if (b.recurrence === "ONCE") return !!b.date && blockAppliesOn(a, b.date);
+  const lastDay = a.endsOn && b.endsOn ? (a.endsOn < b.endsOn ? a.endsOn : b.endsOn) : (a.endsOn ?? b.endsOn);
   // Dois recorrentes sem data de término (RN16): basta compartilharem um dia da semana.
-  return a.repeatWeekdays.some((d) => b.repeatWeekdays.includes(d));
+  if (!lastDay) return a.repeatWeekdays.some((d) => b.repeatWeekdays.includes(d));
+  if (!a.startsOn || !b.startsOn) return false;
+  const firstDay = a.startsOn > b.startsOn ? a.startsOn : b.startsOn;
+  return dateRange(firstDay, lastDay).some((d) => blockAppliesOn(a, d) && blockAppliesOn(b, d));
 }
 
 export function timesOverlap(a: BlockLike, b: BlockLike): boolean {

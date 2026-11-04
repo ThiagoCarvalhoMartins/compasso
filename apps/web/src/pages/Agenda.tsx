@@ -37,7 +37,7 @@ export function AgendaPage() {
   const byDay = useMemo(() => new Map(days.map((d) => [d, blocksForDate(blocks, d)])), [days, blocks]);
 
   const openNew = (date: string) => setDialog({ open: true, draft: { date } });
-  const openEdit = (b: BlockDTO) => setDialog({ open: true, draft: b });
+  const openEdit = (b: BlockDTO, occurrenceDate: string) => setDialog({ open: true, draft: { ...b, occurrenceDate } });
   // RF03.3 — duplicar abre o formulário já preenchido, sem id
   const duplicate = (b: BlockDTO, date: string) =>
     setDialog({ open: true, draft: { ...b, id: undefined, recurrence: "ONCE", date, isOneThing: false } });
@@ -114,7 +114,7 @@ export function AgendaPage() {
               </header>
               {byDay.get(d)!.map((b) => (
                 <article key={b.id} className="group rounded-lg p-2.5 text-sm" style={{ background: b.color }}>
-                  <button className="w-full text-left" onClick={() => openEdit(b)} aria-label={`Editar ${b.title}`}>
+                  <button className="w-full text-left" onClick={() => openEdit(b, d)} aria-label={`Editar ${b.title}`}>
                     <div className="flex items-center gap-1 font-medium leading-tight">
                       {b.isOneThing && <Star className="size-3.5 shrink-0 fill-current" aria-label="A Única Coisa" />}
                       <span className="truncate">{b.title}</span>

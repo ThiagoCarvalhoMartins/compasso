@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   ALERT_SOUNDS,
+  BLOCK_DELETE_SCOPES,
   BLOCK_LOG_STATUSES,
   MIN_AGE,
   QP_DURATIONS,
@@ -125,7 +126,12 @@ export type BlockInput = z.infer<typeof blockInputSchema>;
 
 export const copyDaySchema = z.object({ fromDate: dateSchema, toDate: dateSchema });
 
-export const blockLogSchema = z.object({ status: z.enum(BLOCK_LOG_STATUSES) });
+/** Sem parâmetros exclui o bloco inteiro; scope e date vêm sempre juntos. */
+export const blockDeleteQuerySchema = z
+  .object({ scope: z.enum(BLOCK_DELETE_SCOPES).optional(), date: dateSchema.optional() })
+  .refine((v) => !v.scope === !v.date, { path: ["date"], message: t("validation.required") });
+
+export const blockLogSchema =z.object({ status: z.enum(BLOCK_LOG_STATUSES) });
 
 export const qpStartSchema = z.object({
   plannedSeconds: z

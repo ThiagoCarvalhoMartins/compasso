@@ -22,7 +22,11 @@ export const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const;
 export const RECURRENCES = ["ONCE", "REPEAT"] as const;
 export type Recurrence = (typeof RECURRENCES)[number];
 
-export const BLOCK_LOG_STATUSES = ["DONE", "PARTIAL", "SKIPPED"] as const;
+/** Ao excluir um dia de um bloco recorrente: só aquele dia ou ele e os seguintes. */
+export const BLOCK_DELETE_SCOPES = ["single", "following"] as const;
+export type BlockDeleteScope = (typeof BLOCK_DELETE_SCOPES)[number];
+
+export const BLOCK_LOG_STATUSES =["DONE", "PARTIAL", "SKIPPED"] as const;
 export type BlockLogStatus = (typeof BLOCK_LOG_STATUSES)[number];
 
 export const ROLES = ["USER", "SUPPORT", "ADMIN"] as const;
