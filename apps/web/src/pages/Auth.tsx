@@ -154,7 +154,7 @@ export function RegisterPage() {
             </span>
           </label>
           {e.acceptPrivacy && (
-            <p role="alert" className="text-xs text-[#9b4a37]">
+            <p role="alert" className="text-xs text-error">
               {e.acceptPrivacy.message}
             </p>
           )}

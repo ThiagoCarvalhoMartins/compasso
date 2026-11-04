@@ -5,7 +5,10 @@
  */
 @source "../components";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  color-scheme: light;
   --background: #faf7f2; /* Papel creme */
   --foreground: #3d3a36; /* Grafite suave */
   --card: #fffdf9; /* Branco quente */
@@ -33,6 +36,41 @@
   --block-estudo: #f4c9b0;
   --block-saude: #bfe3d0;
   --block-pessoal: #ebc3c8;
+  --on-block: #3d3a36; /* texto sobre a cor do bloco: os pastéis são os mesmos nos dois temas */
+
+  --error: #9b4a37; /* mensagens de erro em texto pequeno */
+  --overlay: rgb(61 58 54 / 0.25);
+  --qp-surface: #f4f1fa; /* fundo da sessão QP em tela cheia */
+}
+
+/* Modo escuro: grafite quente; as cores de ação escurecem para manter o texto claro legível (AA). */
+.dark {
+  color-scheme: dark;
+  --background: #211f1c;
+  --foreground: #ece7df;
+  --card: #2a2825;
+  --card-foreground: #ece7df;
+  --popover: #2a2825;
+  --popover-foreground: #ece7df;
+  --primary: #4f6f49;
+  --primary-foreground: #f3efe7;
+  --primary-strong: #a8c3a0;
+  --secondary: #5d5380;
+  --secondary-foreground: #f3efe7;
+  --muted: #35322e;
+  --muted-foreground: #b3aca2;
+  --subtle-foreground: #8f887e;
+  --accent: #6e5c26;
+  --accent-foreground: #f3efe7;
+  --destructive: #8f4f40;
+  --destructive-foreground: #f3efe7;
+  --border: #3d3a35;
+  --input: #4a4640;
+  --ring: #a8c3a0;
+
+  --error: #eea997;
+  --overlay: rgb(0 0 0 / 0.55);
+  --qp-surface: #25212f;
 }
 
 @theme inline {
@@ -57,6 +95,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-on-block: var(--on-block);
+  --color-error: var(--error);
+  --color-overlay: var(--overlay);
+  --color-qp-surface: var(--qp-surface);
 
   --radius-sm: calc(var(--radius) - 6px);
   --radius-md: calc(var(--radius) - 4px);

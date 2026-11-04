@@ -1,7 +1,16 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { CalendarDays, Compass, LogOut, Sparkles, UserRound } from "lucide-react";
-import { Avatar, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, cn } from "@compasso/ui";
+import { CalendarDays, Compass, LogOut, Moon, Sparkles, UserRound } from "lucide-react";
+import {
+  Avatar,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSwitchItem,
+  DropdownMenuTrigger,
+  cn,
+} from "@compasso/ui";
 import { useAuth } from "../lib/auth";
+import { useTheme } from "../lib/theme";
 
 const links = [
   { to: "/", label: "Compasso", icon: Compass, end: true },
@@ -12,6 +21,7 @@ const links = [
 
 export function Layout() {
   const { user, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   return (
     <div className="min-h-dvh pb-20 md:pb-0">
       <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur">
@@ -42,12 +52,18 @@ export function Layout() {
               >
                 <Avatar name={user.name} src={user.avatarUrl} className="size-8" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              <DropdownMenuContent className="min-w-52">
                 <DropdownMenuItem asChild>
                   <Link to="/perfil">
                     <UserRound aria-hidden /> Perfil
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuSwitchItem
+                  checked={theme === "dark"}
+                  onCheckedChange={(dark) => setTheme(dark ? "dark" : "light")}
+                >
+                  <Moon aria-hidden /> Modo escuro
+                </DropdownMenuSwitchItem>
                 <DropdownMenuItem onSelect={() => void logout()}>
                   <LogOut aria-hidden /> Sair
                 </DropdownMenuItem>

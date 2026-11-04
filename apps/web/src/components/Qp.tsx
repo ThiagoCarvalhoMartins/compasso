@@ -208,7 +208,7 @@ function QpSession({
       role="dialog"
       aria-modal="true"
       aria-labelledby="qp-title"
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 bg-[#f4f1fa] p-6 text-center"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-8 bg-qp-surface p-6 text-center"
     >
       <p className="text-sm uppercase tracking-widest text-muted-foreground">Repetição QP</p>
       <div className="font-serif text-8xl tabular-nums" aria-live="off">

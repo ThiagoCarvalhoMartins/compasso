@@ -236,7 +236,7 @@ export function BlockFormDialog({
                   </div>
                 )}
                 {errors.repeatWeekdays && (
-                  <p role="alert" className="text-xs text-[#9b4a37]">
+                  <p role="alert" className="text-xs text-error">
                     {errors.repeatWeekdays}
                   </p>
                 )}

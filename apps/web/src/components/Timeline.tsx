@@ -49,7 +49,7 @@ export function Timeline({
               <li
                 key={b.id}
                 className={cn(
-                  "absolute inset-x-0 overflow-hidden rounded-lg px-3 py-1.5 text-sm transition-shadow duration-300",
+                  "absolute inset-x-0 overflow-hidden rounded-lg px-3 py-1.5 text-sm text-on-block transition-shadow duration-300",
                   isCurrent && "ring-2 ring-primary-strong",
                 )}
                 style={{ top, height, background: b.color }}
