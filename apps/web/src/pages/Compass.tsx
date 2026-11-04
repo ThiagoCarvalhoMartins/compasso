@@ -84,7 +84,7 @@ export function CompassPage() {
     <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
       <div className="flex flex-col gap-5">
         <div>
-          <p className="text-sm capitalize text-muted-foreground">{formatLongDate(data.date)}</p>
+          <p className="text-sm capitalize text-muted-foreground mb-1.5">{formatLongDate(data.date)}</p>
           <h1 className="text-3xl md:text-4xl">Seu dia em ritmo</h1>
         </div>
 
