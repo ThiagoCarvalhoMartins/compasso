@@ -82,7 +82,7 @@ export function LoginPage() {
           </Button>
         )}
         <Button type="submit" size="lg" disabled={formState.isSubmitting}>
-          Entrar
+          {formState.isSubmitting ? "Entrando..." : "Entrar"}
         </Button>
       </form>
       <div className="flex justify-between text-sm">
