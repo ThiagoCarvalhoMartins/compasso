@@ -1,11 +1,15 @@
 import { Router } from "express";
 import {
+  addDays,
+  blockAppliesOn,
+  blockDeleteQuerySchema,
   blockInputSchema,
   blockLogSchema,
   blocksForDate,
   categorySchema,
   copyDaySchema,
   dateSchema,
+  seriesHasOccurrences,
   t,
 } from "@compasso/shared";
 import { z } from "zod";
@@ -68,8 +72,10 @@ blocksRouter.patch("/:id", async (req, res) => {
   const id = userId(req);
   const current = await prisma.block.findFirst({ where: { id: req.params.id, userId: id } });
   if (!current) throw notFound();
-  const merged = { ...toBlockDTO(current), ...req.body };
-  const block = normalizeBlock(parse(blockInputSchema, merged));
+  const before = toBlockDTO(current);
+  const merged = { ...before, ...req.body };
+  const block = normalizeBlock(parse(blockInputSchema, merged), before);
+  if (!seriesHasOccurrences(block)) throw badRequest(t("block.noOccurrences"), "NO_OCCURRENCES");
   await assertCategory(id, block.categoryId);
   const dateChanged = block.recurrence === "ONCE" && block.date !== toBlockDTO(current).date;
   await assertBlockAllowed(id, await userTimezone(id), { ...block, id: current.id }, { checkPastDate: dateChanged });
@@ -77,9 +83,36 @@ blocksRouter.patch("/:id", async (req, res) => {
   res.json(toBlockDTO(updated));
 });
 
+// ?scope=single|following&date= exclui parte de um recorrente; sem parâmetros, o bloco inteiro.
 blocksRouter.delete("/:id", async (req, res) => {
-  const { count } = await prisma.block.deleteMany({ where: { id: req.params.id, userId: userId(req) } });
-  if (!count) throw notFound();
+  const { scope, date } = parse(blockDeleteQuerySchema, req.query);
+  const where = { id: req.params.id, userId: userId(req) };
+  const current = await prisma.block.findFirst({ where });
+  if (!current) throw notFound();
+  const block = toBlockDTO(current);
+
+  if (block.recurrence === "ONCE" || !scope || !date) {
+    await prisma.block.deleteMany({ where });
+    res.status(204).end();
+    return;
+  }
+
+  if (!blockAppliesOn(block, date)) throw badRequest(t("block.notOnDate"), "NOT_ON_DATE");
+  const following = scope === "following";
+  const next = following
+    ? { ...block, endsOn: addDays(date, -1), excludedDates: block.excludedDates.filter((d) => d < date) }
+    : { ...block, excludedDates: [...block.excludedDates, date].sort() };
+
+  if (!seriesHasOccurrences(next)) {
+    await prisma.block.deleteMany({ where });
+  } else {
+    // O histórico dos dias que continuam na série é mantido; o dos dias excluídos sai junto.
+    const dbDate = toDbDate(date);
+    await prisma.$transaction([
+      prisma.block.update({ where: { id: block.id }, data: toBlockData(next) }),
+      prisma.blockLog.deleteMany({ where: { blockId: block.id, date: following ? { gte: dbDate } : dbDate } }),
+    ]);
+  }
   res.status(204).end();
 });
 
@@ -99,6 +132,8 @@ blocksRouter.post("/copy-day", async (req, res) => {
     date: toDate,
     repeatWeekdays: [],
     startsOn: null,
+    endsOn: null,
+    excludedDates: [],
   }));
   // Valida todas as cópias antes de gravar (tudo ou nada).
   for (const copy of copies) await assertBlockAllowed(id, timezone, copy, { checkPastDate: false });

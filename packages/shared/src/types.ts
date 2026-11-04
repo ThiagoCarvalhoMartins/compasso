@@ -13,6 +13,10 @@ export interface BlockDTO {
   repeatWeekdays: number[];
   /** YYYY-MM-DD, apenas para REPEAT. */
   startsOn: string | null;
+  /** YYYY-MM-DD, último dia da série; nulo = sem término. Apenas para REPEAT. */
+  endsOn: string | null;
+  /** Dias (YYYY-MM-DD) excluídos individualmente da série. Apenas para REPEAT. */
+  excludedDates: string[];
   startTime: string;
   endTime: string;
   color: string;

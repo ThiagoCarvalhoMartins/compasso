@@ -104,6 +104,10 @@ model Block {
   repeatWeekdays String?    @map("repeat_weekdays") @db.VarChar(13)
   /// Apenas para REPEAT
   startsOn       DateTime?  @map("starts_on") @db.Date
+  /// Apenas para REPEAT: último dia da série, quando o usuário exclui "este e os seguintes"
+  endsOn         DateTime?  @map("ends_on") @db.Date
+  /// Apenas para REPEAT: dias (YYYY-MM-DD) separados por vírgula, excluídos individualmente da série
+  excludedDates  String?    @map("excluded_dates") @db.Text
   /// Hora local do usuário (RN09)
   startTime      DateTime   @map("start_time") @db.Time(0)
   endTime        DateTime   @map("end_time") @db.Time(0)

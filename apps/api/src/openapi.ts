@@ -23,7 +23,7 @@ const routes: Route[] = [
   ["get", "/blocks", "Lista blocos (todos, ou o dia montado com ?date=)", "Agenda"],
   ["post", "/blocks", "Cria bloco de um dia só ou recorrente", "Agenda"],
   ["patch", "/blocks/{id}", "Edita um bloco", "Agenda"],
-  ["delete", "/blocks/{id}", "Exclui um bloco", "Agenda"],
+  ["delete", "/blocks/{id}", "Exclui um bloco; em recorrentes, ?scope=single|following&date= exclui só o dia ou ele e os seguintes", "Agenda"],
   ["post", "/blocks/copy-day", "Copia os blocos de um dia para outro", "Agenda"],
   ["put", "/blocks/{id}/logs/{date}", "Marca bloco como concluído, parcial ou não feito", "Agenda"],
   ["get", "/compass/today", "Blocos de hoje ordenados, com o log do dia", "Compasso"],

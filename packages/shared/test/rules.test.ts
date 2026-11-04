@@ -9,6 +9,7 @@ import {
   formatCountdown,
   passwordSchema,
   planAlerts,
+  seriesHasOccurrences,
   startOfWeek,
   validateBlockTimes,
   weekdayOf,
@@ -94,6 +95,51 @@ describe("montagem do dia", () => {
   it("RN16: recorrente só vale a partir de starts_on", () => {
     expect(blocksForDate(blocks, "2026-11-02").map((b) => b.id)).toEqual(["trabalho"]);
     expect(blocksForDate(blocks, "2026-11-09").map((b) => b.id)).toEqual(["trabalho", "futuro"]);
+  });
+});
+
+describe("exclusão parcial de recorrentes", () => {
+  // Toda segunda a partir de 02/11/2026
+  const base = { id: "a", title: "Inglês" };
+  const monday = (extra: Partial<BlockLike> = {}) => repeat([1], "2026-11-02", "09:00", "10:00", { ...base, ...extra });
+
+  it("apenas este: some só no dia excluído", () => {
+    const block = monday({ excludedDates: ["2026-11-09"] });
+    expect(blocksForDate([block], "2026-11-02")).toHaveLength(1);
+    expect(blocksForDate([block], "2026-11-09")).toHaveLength(0);
+    expect(blocksForDate([block], "2026-11-16")).toHaveLength(1);
+  });
+
+  it("este e os seguintes: some a partir do corte, mantendo os anteriores", () => {
+    const block = monday({ endsOn: "2026-11-08" });
+    expect(blocksForDate([block], "2026-11-02")).toHaveLength(1);
+    expect(blocksForDate([block], "2026-11-09")).toHaveLength(0);
+    expect(blocksForDate([block], "2026-11-16")).toHaveLength(0);
+  });
+
+  it("libera o horário do dia excluído para um bloco de um dia só", () => {
+    const block = monday({ excludedDates: ["2026-11-09"] });
+    expect(findOverlap(once("2026-11-09", "09:00", "10:00"), [block])).toBeNull();
+    expect(findOverlap(once("2026-11-16", "09:00", "10:00"), [block])).not.toBeNull();
+  });
+
+  it("recorrente novo não conflita com série encerrada antes dele", () => {
+    const ended = monday({ endsOn: "2026-11-08" });
+    expect(findOverlap(repeat([1], "2026-11-09", "09:00", "10:00"), [ended])).toBeNull();
+    expect(findOverlap(repeat([1], "2026-11-02", "09:00", "10:00"), [ended])).not.toBeNull();
+  });
+
+  it("recorrentes com períodos em comum só conflitam se caírem no mesmo dia", () => {
+    const ended = monday({ endsOn: "2026-11-03" });
+    // O período coincide em 02–03/11, mas a quarta só começa a contar depois do fim da série.
+    expect(findOverlap(repeat([3], "2026-11-02", "09:00", "10:00"), [ended])).toBeNull();
+  });
+
+  it("detecta a série sem nenhum dia restante", () => {
+    expect(seriesHasOccurrences(monday())).toBe(true);
+    expect(seriesHasOccurrences(monday({ excludedDates: ["2026-11-02"] }))).toBe(true);
+    expect(seriesHasOccurrences(monday({ endsOn: "2026-11-01" }))).toBe(false);
+    expect(seriesHasOccurrences(monday({ endsOn: "2026-11-09", excludedDates: ["2026-11-02", "2026-11-09"] }))).toBe(false);
   });
 });
 
