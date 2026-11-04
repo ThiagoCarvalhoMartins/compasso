@@ -11,7 +11,7 @@ import {
   type AuthResponse,
   type LoginInput,
 } from "@compasso/shared";
-import { ApiError, Button, Card, CardContent, Field, Input } from "@compasso/ui";
+import { ApiError, Button, Card, CardContent, Field, Input, PasswordInput } from "@compasso/ui";
 import { GoogleLogin } from "../components/GoogleLogin";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
@@ -73,7 +73,7 @@ export function LoginPage() {
           <Input id="email" type="email" autoComplete="email" {...register("email")} />
         </Field>
         <Field label="Senha" htmlFor="password" error={formState.errors.password?.message}>
-          <Input id="password" type="password" autoComplete="current-password" {...register("password")} />
+          <PasswordInput id="password" autoComplete="current-password" {...register("password")} />
         </Field>
         <FormMessage error={error} />
         {unverified && (
@@ -137,7 +137,7 @@ export function RegisterPage() {
           <Input id="email" type="email" autoComplete="email" {...register("email")} />
         </Field>
         <Field label="Senha" htmlFor="password" error={e.password?.message} hint="Mínimo de 8 caracteres, com letras e números.">
-          <Input id="password" type="password" autoComplete="new-password" {...register("password")} />
+          <PasswordInput id="password" autoComplete="new-password" {...register("password")} />
         </Field>
         <Field label="Data de nascimento" htmlFor="birthDate" error={e.birthDate?.message} hint="É preciso ter pelo menos 13 anos.">
           <Input id="birthDate" type="date" {...register("birthDate")} />
@@ -247,10 +247,10 @@ export function ResetPasswordPage() {
         noValidate
       >
         <Field label="Nova senha" htmlFor="password" error={formState.errors.password?.message}>
-          <Input id="password" type="password" autoComplete="new-password" {...register("password")} />
+          <PasswordInput id="password" autoComplete="new-password" {...register("password")} />
         </Field>
         <Field label="Confirme a senha" htmlFor="confirm" error={formState.errors.confirm?.message}>
-          <Input id="confirm" type="password" autoComplete="new-password" {...register("confirm")} />
+          <PasswordInput id="confirm" autoComplete="new-password" {...register("confirm")} />
         </Field>
         <FormMessage {...state} />
         <Button type="submit" size="lg" disabled={formState.isSubmitting}>
