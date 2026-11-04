@@ -1,6 +1,6 @@
-import { NavLink, Outlet } from "react-router-dom";
-import { CalendarDays, Compass, Sparkles, UserRound } from "lucide-react";
-import { Avatar, cn } from "@compasso/ui";
+import { Link, NavLink, Outlet } from "react-router-dom";
+import { CalendarDays, Compass, LogOut, Sparkles, UserRound } from "lucide-react";
+import { Avatar, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, cn } from "@compasso/ui";
 import { useAuth } from "../lib/auth";
 
 const links = [
@@ -11,7 +11,7 @@ const links = [
 ];
 
 export function Layout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   return (
     <div className="min-h-dvh pb-20 md:pb-0">
       <header className="sticky top-0 z-30 border-b bg-background/90 backdrop-blur">
@@ -34,7 +34,26 @@ export function Layout() {
               </NavLink>
             ))}
           </nav>
-          {user && <Avatar name={user.name} src={user.avatarUrl} className="size-8" />}
+          {user && (
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger
+                aria-label="Menu do usuário"
+                className="rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring cursor-pointer"
+              >
+                <Avatar name={user.name} src={user.avatarUrl} className="size-8" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild>
+                  <Link to="/perfil">
+                    <UserRound aria-hidden /> Perfil
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => void logout()}>
+                  <LogOut aria-hidden /> Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </header>
 
