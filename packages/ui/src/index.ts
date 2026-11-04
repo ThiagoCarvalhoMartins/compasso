@@ -14,5 +14,11 @@ export {
   DialogTitle,
   DialogTrigger,
 } from "./components/dialog";
-export { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./components/dropdown-menu";
+export {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSwitchItem,
+  DropdownMenuTrigger,
+} from "./components/dropdown-menu";
 export { Avatar, Badge, Table, TBody, TD, TH, THead, TR, Toaster, toast } from "./components/misc";

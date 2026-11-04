@@ -169,7 +169,7 @@ function AlertsCard() {
               step={0.05}
               value={s.alertVolume}
               onChange={(e) => setS({ ...s, alertVolume: Number(e.target.value) })}
-              className="h-10 accent-[#5f7f57]"
+              className="h-10 accent-primary-strong"
             />
           </div>
           <Field label="Aviso antes do fim" htmlFor="endAlert">

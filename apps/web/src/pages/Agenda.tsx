@@ -113,7 +113,7 @@ export function AgendaPage() {
                 <span className="text-xs tabular-nums text-muted-foreground">{d.slice(8)}/{d.slice(5, 7)}</span>
               </header>
               {byDay.get(d)!.map((b) => (
-                <article key={b.id} className="group rounded-lg p-2.5 text-sm" style={{ background: b.color }}>
+                <article key={b.id} className="group rounded-lg p-2.5 text-sm text-on-block" style={{ background: b.color }}>
                   <button className="w-full text-left" onClick={() => openEdit(b, d)} aria-label={`Editar ${b.title}`}>
                     <div className="flex items-center gap-1 font-medium leading-tight">
                       {b.isOneThing && <Star className="size-3.5 shrink-0 fill-current" aria-label="A Única Coisa" />}
