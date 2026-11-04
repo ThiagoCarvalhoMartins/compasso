@@ -1,8 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Settings2, Sparkles } from "lucide-react";
+import { CircleHelp, Settings2, Sparkles } from "lucide-react";
 import { QP_DEFAULT_DURATION, QP_DURATIONS, type QpDuration, type SettingsDTO } from "@compasso/shared";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Label, Progress, Select, toast } from "@compasso/ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  Label,
+  Progress,
+  Select,
+  toast,
+} from "@compasso/ui";
 import { api } from "../lib/api";
 import { playAlert, unlockAudio } from "../lib/audio";
 import { useNow } from "../hooks/useNow";
@@ -22,6 +38,7 @@ export function QpLauncher({ settings, qpToday }: { settings: SettingsDTO; qpTod
   const [adjusting, setAdjusting] = useState(saved === null);
   const [duration, setDuration] = useState<QpDuration>(saved ?? QP_DEFAULT_DURATION);
   const [session, setSession] = useState<{ id: string; startedAt: number; planned: number } | null>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -45,9 +62,20 @@ export function QpLauncher({ settings, qpToday }: { settings: SettingsDTO; qpTod
   };
 
   return (
-    <Card className="bg-secondary/35">
+    <Card className="relative bg-secondary/35">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute right-3 top-3"
+        onClick={() => setInfoOpen(true)}
+        aria-label="Curiosidade: por que fazer Repetições QP"
+        title="Curiosidade"
+      >
+        <CircleHelp aria-hidden />
+      </Button>
+      <QpInfoDialog open={infoOpen} onOpenChange={setInfoOpen} />
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2 pr-10">
           <Sparkles className="size-5" aria-hidden /> Repetições QP
         </CardTitle>
         <CardDescription>
@@ -99,6 +127,37 @@ export function QpLauncher({ settings, qpToday }: { settings: SettingsDTO; qpTod
         />
       )}
     </Card>
+  );
+}
+
+/** Por que as repetições importam, com base no livro que inspirou o exercício. */
+function QpInfoDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Por que fazer Repetições QP?</DialogTitle>
+          <DialogDescription>
+            Com base em <em>Inteligência Positiva</em>, de Shirzad Chamine.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-3 text-sm leading-relaxed">
+          <p>
+            Para Chamine, o QP (Quociente de Positividade) indica, de 0 a 100, com que frequência sua mente trabalha a seu
+            favor em vez de sabotar você. Ele aponta 75 como o ponto de virada.
+          </p>
+          <p>
+            Uma Repetição QP é simples: levar a atenção ao corpo ou a um dos sentidos por pelo menos 10 segundos, cerca de três
+            respirações. Esse instante ajuda a silenciar os Sabotadores, como o Crítico, e dá espaço ao Sábio, a parte da mente
+            que responde com mais calma e clareza.
+          </p>
+          <p>
+            O autor compara a prática a um treino de musculação: o que fortalece a mente é a repetição, não a duração. Por isso,
+            ele sugere cerca de 100 repetições por dia, encaixadas na rotina, durante pelo menos 21 dias.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
