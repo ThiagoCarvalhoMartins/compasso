@@ -4,6 +4,7 @@ export { Button, buttonVariants, type ButtonProps } from "./components/button";
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/card";
 export { Field, Input, Label, PasswordInput, Select, Textarea } from "./components/form";
 export { Progress } from "./components/progress";
+export { Spinner } from "./components/spinner";
 export {
   Dialog,
   DialogClose,

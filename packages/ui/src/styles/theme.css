@@ -109,6 +109,14 @@
   --font-sans: "Inter", "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --shadow-soft: 0 1px 2px rgb(61 58 54 / 0.04), 0 2px 8px rgb(61 58 54 / 0.03);
+
+  --animate-spinner: spinner 0.8s steps(8) infinite;
+
+  @keyframes spinner {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 }
 
 @layer base {
