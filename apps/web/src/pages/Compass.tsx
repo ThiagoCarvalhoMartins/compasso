@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useMutationState, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { BellOff, BellRing, Lightbulb, LightbulbOff, Play, Star } from "lucide-react";
 import {
@@ -9,7 +9,7 @@ import {
   type BlockLogStatus,
   type CompassTodayDTO,
 } from "@compasso/shared";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Progress, toast } from "@compasso/ui";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, cn, Progress, Spinner, toast } from "@compasso/ui";
 import { QpLauncher } from "../components/Qp";
 import { Timeline } from "../components/Timeline";
 import { useAlerts } from "../hooks/useAlerts";
@@ -21,6 +21,9 @@ import { formatLongDate, humanDuration, zonedNow } from "../lib/time";
 
 const MUTE_MINUTES = 30;
 const STATUS_LABEL: Record<BlockLogStatus, string> = { DONE: "Concluído", PARTIAL: "Parcial", SKIPPED: "Não realizado" };
+const MARK_BLOCK_KEY = ["mark-block"];
+
+type MarkBlockVariables = { blockId: string; status: BlockLogStatus };
 
 export function CompassPage() {
   const qc = useQueryClient();
@@ -56,10 +59,15 @@ export function CompassPage() {
   });
 
   const mark = useMutation({
-    mutationFn: ({ blockId, status }: { blockId: string; status: BlockLogStatus }) =>
-      api.put(`/blocks/${blockId}/logs/${data!.date}`, { status }),
+    mutationKey: MARK_BLOCK_KEY,
+    mutationFn: ({ blockId, status }: MarkBlockVariables) => api.put(`/blocks/${blockId}/logs/${data!.date}`, { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["compass"] }),
     onError: (e: Error) => toast.error(e.message),
+  });
+  // Por bloco, e não mark.isPending: confirmar um bloco não pode travar nem apagar o spinner dos demais.
+  const pendingMarks = useMutationState({
+    filters: { mutationKey: MARK_BLOCK_KEY, status: "pending" },
+    select: (mutation) => mutation.state.variables as MarkBlockVariables,
   });
 
   if (isLoading) return <p className="text-muted-foreground">Carregando seu dia…</p>;
@@ -203,23 +211,39 @@ export function CompassPage() {
               <CardTitle>Como foram seus blocos?</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              {pendingReview.map((b) => (
-                <div key={b.id} className="flex flex-col gap-2 border-b pb-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
-                  <span className="text-sm">
-                    <strong className="font-medium">{b.title}</strong>{" "}
-                    <span className="text-muted-foreground">
-                      {b.startTime}–{b.endTime}
+              {pendingReview.map((b) => {
+                const pendingStatus = pendingMarks.find((m) => m.blockId === b.id)?.status;
+                return (
+                  <div key={b.id} className="flex flex-col gap-2 border-b pb-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-sm">
+                      <strong className="font-medium">{b.title}</strong>{" "}
+                      <span className="text-muted-foreground">
+                        {b.startTime}–{b.endTime}
+                      </span>
                     </span>
-                  </span>
-                  <div className="flex gap-1.5">
-                    {(["DONE", "PARTIAL", "SKIPPED"] as const).map((s) => (
-                      <Button key={s} size="sm" variant={s === "DONE" ? "default" : "outline"} onClick={() => mark.mutate({ blockId: b.id, status: s })}>
-                        {STATUS_LABEL[s]}
-                      </Button>
-                    ))}
+                    <div className="flex gap-1.5">
+                      {(["DONE", "PARTIAL", "SKIPPED"] as const).map((s) => {
+                        const loading = pendingStatus === s;
+                        return (
+                          <Button
+                            key={s}
+                            size="sm"
+                            variant={s === "DONE" ? "default" : "outline"}
+                            className={cn("relative", loading && "disabled:opacity-100")}
+                            disabled={pendingStatus !== undefined}
+                            aria-busy={loading}
+                            onClick={() => mark.mutate({ blockId: b.id, status: s })}
+                          >
+                            {/* O rótulo fica transparente para o botão manter a largura e o nome acessível. */}
+                            <span className={loading ? "opacity-0" : undefined}>{STATUS_LABEL[s]}</span>
+                            {loading && <Spinner className="absolute inset-0 m-auto" />}
+                          </Button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
         )}
