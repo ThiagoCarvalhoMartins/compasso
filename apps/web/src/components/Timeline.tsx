@@ -29,7 +29,7 @@ export function Timeline({
   }, []);
 
   return (
-    <div className="max-h-[70dvh] overflow-y-auto rounded-xl border bg-card p-3" aria-label="Linha do tempo de hoje">
+    <div className="max-h-[70dvh] overflow-y-auto scrollbar-rounded rounded-xl border bg-card p-3" aria-label="Linha do tempo de hoje">
       <div className="relative" style={{ height: y(last) + 8 }}>
         {hours.map((h) => (
           <div key={h} className="absolute inset-x-0 flex items-center gap-2" style={{ top: y(h) }}>
