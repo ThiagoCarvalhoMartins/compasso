@@ -111,10 +111,24 @@
   --shadow-soft: 0 1px 2px rgb(61 58 54 / 0.04), 0 2px 8px rgb(61 58 54 / 0.03);
 
   --animate-spinner: spinner 0.8s steps(8) infinite;
+  --animate-breath: breath 10s ease-in-out infinite;
 
   @keyframes spinner {
     to {
       transform: rotate(360deg);
+    }
+  }
+
+  /* Mesmo ciclo do som de fundo da QP (apps/web/src/lib/audio.ts): 4 s subindo, 6 s descendo. */
+  @keyframes breath {
+    0%,
+    100% {
+      transform: scale(0.62);
+      opacity: 0.5;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
     }
   }
 }
