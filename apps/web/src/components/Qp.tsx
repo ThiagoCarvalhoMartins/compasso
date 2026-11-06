@@ -219,6 +219,35 @@ function QpInfoDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
   );
 }
 
+/** Coordenadas com a base de cada pétala em (0, -base), apontando para fora do centro. */
+const petalPath = (base: number, length: number, halfWidth: number) => {
+  const tip = -(base + length);
+  return `M0 ${-base} C${-halfWidth} ${-base - length * 0.3} ${-halfWidth * 0.75} ${-base - length * 0.75} 0 ${tip} C${halfWidth * 0.75} ${-base - length * 0.75} ${halfWidth} ${-base - length * 0.3} 0 ${-base}Z`;
+};
+
+const LOTUS_RINGS = [
+  { path: petalPath(38, 58, 22), offset: 0, className: "opacity-70" },
+  { path: petalPath(26, 40, 16), offset: 22.5, className: "opacity-45" },
+];
+const LOTUS_PETALS = 8;
+
+/** Flor de lótus vista de cima: as pétalas se afastam do centro na mesma medida, abrindo espaço igual entre elas. */
+function BreathingLotus() {
+  return (
+    <svg aria-hidden viewBox="-125 -125 250 250" className="absolute -inset-6 size-[calc(100%+3rem)] fill-secondary">
+      {LOTUS_RINGS.map((ring) => (
+        <g key={ring.offset} className={ring.className}>
+          {Array.from({ length: LOTUS_PETALS }, (_, i) => (
+            <g key={i} transform={`rotate(${ring.offset + (i * 360) / LOTUS_PETALS})`}>
+              <path d={ring.path} className="animate-breath motion-reduce:animate-none" />
+            </g>
+          ))}
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 /** RF05.4/RF05.5 — sessão em tela cheia com cronômetro, foco sensorial e som suave no início e no fim. */
 function QpSession({
   session,
@@ -299,7 +328,7 @@ function QpSession({
       {ambient ? (
         <div className="relative flex size-56 flex-col items-center justify-center">
           {/* Equivalente visual do som (RNF10). Sem animação, o texto Inspire/Expire continua indicando o ritmo. */}
-          <div aria-hidden className="absolute inset-0 animate-breath rounded-full bg-secondary/45 motion-reduce:animate-none" />
+          <BreathingLotus />
           <div className="relative font-serif text-8xl tabular-nums" aria-live="off">
             {remaining}
           </div>

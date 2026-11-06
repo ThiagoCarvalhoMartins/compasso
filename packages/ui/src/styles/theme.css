@@ -119,15 +119,16 @@
     }
   }
 
-  /* Mesmo ciclo do som de fundo da QP (apps/web/src/lib/audio.ts): 4 s subindo, 6 s descendo. */
+  /* Mesmo ciclo do som de fundo da QP (apps/web/src/lib/audio.ts): 4 s abrindo, 6 s fechando.
+     Cada pétala já está girada para fora do centro, então subir em Y a afasta do centro. */
   @keyframes breath {
     0%,
     100% {
-      transform: scale(0.62);
-      opacity: 0.5;
+      transform: translateY(0);
+      opacity: 0.6;
     }
     40% {
-      transform: scale(1);
+      transform: translateY(-26px);
       opacity: 1;
     }
   }
