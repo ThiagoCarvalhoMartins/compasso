@@ -64,6 +64,7 @@ pnpm typecheck
 - **Tokens de confirmação de e-mail e de redefinição de senha** são JWTs de uso único (o segredo inclui o estado atual do usuário), sem tabela extra.
 - **`repeat_weekdays`** é guardado como texto `"1,3,5"` (0 = domingo).
 - **Sons dos alertas** são sintetizados com a Web Audio API (sino, tigela tibetana, tom suave), sem arquivos de áudio.
+- **Som de fundo das Repetições QP** (mar ou vento) também é sintetizado e acompanha um ciclo de respiração de 10 s. A escolha fica salva no navegador.
 - **Copiar dia** cria cópias "Apenas neste dia" na data de destino, validando sobreposição antes de gravar.
 - **Exclusão de conta** anonimiza na hora (dentro dos 30 dias da RN13); sessões QP ficam sem dono, como métrica anônima.
 - **Foto do perfil** é um link (URL). Upload de arquivo pediria Azure Blob Storage — fica para depois.
