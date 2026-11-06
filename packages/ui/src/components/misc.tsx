@@ -50,7 +50,15 @@ export function Toaster() {
   return (
     <SonnerToaster
       position="top-center"
+      closeButton
       toastOptions={{
+        closeButtonAriaLabel: "Fechar notificação",
+        // O "!" vence o CSS do Sonner, que tem cores próprias e não acompanha o tema. No celular, o toast fecha ao deslizar.
+        classNames: {
+          closeButton:
+            "max-md:hidden! left-auto! right-0! [transform:translate(35%,-35%)]! bg-card! text-foreground! border-border! hover:bg-muted!",
+          description: "text-muted-foreground!",
+        },
         style: {
           background: "var(--card)",
           color: "var(--foreground)",
