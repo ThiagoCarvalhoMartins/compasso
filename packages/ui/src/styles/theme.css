@@ -119,6 +119,30 @@
   }
 }
 
+/* Barra de rolagem de caixas arredondadas: a margem do trilho igual ao raio mantém a barra longe dos cantos. */
+@utility scrollbar-rounded {
+  &::-webkit-scrollbar {
+    width: 10px;
+  }
+  &::-webkit-scrollbar-track {
+    margin-block: calc(var(--radius) + 2px); /* mesmo raio de rounded-xl e rounded-2xl */
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--subtle-foreground) padding-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-foreground) padding-box;
+  }
+  /* Firefox não tem esses seletores, mas já recorta a barra no arredondamento. */
+  @supports not selector(::-webkit-scrollbar) {
+    scrollbar-width: thin;
+    scrollbar-color: var(--subtle-foreground) transparent;
+  }
+}
+
 @layer base {
   * {
     border-color: var(--border);
