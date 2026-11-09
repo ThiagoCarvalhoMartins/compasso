@@ -17,6 +17,10 @@ import {
   Label,
   Progress,
   Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   toast,
 } from "@compasso/ui";
 import { api } from "../lib/api";
@@ -45,6 +49,9 @@ const FOCUS_WITH_AMBIENT = [
 ];
 
 const AMBIENT_LABEL: Record<AmbientSound, string> = { mar: "Ondas do mar", vento: "Vento" };
+/** O Select do Radix não aceita item com valor vazio; este valor representa a opção "Sem som". */
+const NO_AMBIENT = "__none__";
+
 const AMBIENT_STORAGE_KEY = "compasso:qp-ambient";
 
 function readAmbient(): AmbientSound | null {
@@ -129,38 +136,41 @@ export function QpLauncher({ settings, qpToday }: { settings: SettingsDTO; qpTod
         {adjusting && (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="qp-duration">Duração</Label>
-            <Select
-              id="qp-duration"
-              className="w-36"
-              value={duration}
-              onChange={(e) => setDuration(Number(e.target.value) as QpDuration)}
-            >
-              {QP_DURATIONS.map((d) => (
-                <option key={d} value={d}>
-                  {d} segundos
-                </option>
-              ))}
+            <Select value={String(duration)} onValueChange={(v) => setDuration(Number(v) as QpDuration)}>
+              <SelectTrigger id="qp-duration" className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {QP_DURATIONS.map((d) => (
+                  <SelectItem key={d} value={String(d)}>
+                    {d} segundos
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
         )}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="qp-ambient">Som de fundo</Label>
           <Select
-            id="qp-ambient"
-            className="w-40"
-            value={ambient ?? ""}
-            onChange={(e) => {
-              const next = AMBIENT_SOUNDS.find((sound) => sound === e.target.value) ?? null;
+            value={ambient ?? NO_AMBIENT}
+            onValueChange={(v) => {
+              const next = AMBIENT_SOUNDS.find((sound) => sound === v) ?? null;
               setAmbient(next);
               saveAmbient(next);
             }}
           >
-            <option value="">Sem som</option>
-            {AMBIENT_SOUNDS.map((sound) => (
-              <option key={sound} value={sound}>
-                {AMBIENT_LABEL[sound]}
-              </option>
-            ))}
+            <SelectTrigger id="qp-ambient" className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_AMBIENT}>Sem som</SelectItem>
+              {AMBIENT_SOUNDS.map((sound) => (
+                <SelectItem key={sound} value={sound}>
+                  {AMBIENT_LABEL[sound]}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
         </div>
         <Button size="lg" variant="secondary" className="bg-secondary" onClick={begin} disabled={start.isPending}>

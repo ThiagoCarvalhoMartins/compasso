@@ -2,8 +2,11 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { addDays } from "@compasso/shared";
-import { Button, Card, CardContent, Input, Label, Select, Table, TBody, TD, TH, THead, TR, downloadBlob, toast } from "@compasso/ui";
+import { Button, Card, CardContent, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TBody, TD, TH, THead, TR, downloadBlob, toast } from "@compasso/ui";
 import { AGE_GROUPS, api } from "../lib";
+
+/** O Select do Radix não aceita item com valor vazio; este valor representa a opção "Todas". */
+const ALL = "__all__";
 
 type ReportType = "cadastros" | "engajamento";
 type Row = Record<string, string | number>;
@@ -43,9 +46,14 @@ export function ReportsPage() {
         <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="type">Relatório</Label>
-            <Select id="type" value={type} onChange={(e) => setType(e.target.value as ReportType)}>
-              <option value="cadastros">Cadastros por período</option>
-              <option value="engajamento">Engajamento</option>
+            <Select value={type} onValueChange={(v) => setType(v as ReportType)}>
+              <SelectTrigger id="type">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cadastros">Cadastros por período</SelectItem>
+                <SelectItem value="engajamento">Engajamento</SelectItem>
+              </SelectContent>
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -58,13 +66,18 @@ export function ReportsPage() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="age">Faixa etária</Label>
-            <Select id="age" value={ageGroup} onChange={(e) => setAgeGroup(e.target.value)}>
-              <option value="">Todas</option>
-              {AGE_GROUPS.map((g) => (
-                <option key={g} value={g}>
-                  {g} anos
-                </option>
-              ))}
+            <Select value={ageGroup || ALL} onValueChange={(v) => setAgeGroup(v === ALL ? "" : v)}>
+              <SelectTrigger id="age">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>Todas</SelectItem>
+                {AGE_GROUPS.map((g) => (
+                  <SelectItem key={g} value={g}>
+                    {g} anos
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
           <div className="flex gap-2">
