@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { TriangleAlert, X } from "lucide-react";
 import {
   addDays,
   weekdayOf,
@@ -24,6 +25,9 @@ function axisLabel(date: string, index: number, period: Period, count: number) {
 
 const shortDate = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}`;
 const percent = (part: number, total: number) => (total ? Math.round((part / total) * 100) : 0);
+
+/** Abaixo desta taxa de conclusão (%), o Analytics sugere rever os blocos. */
+const LOW_COMPLETION_RATE = 70;
 
 /** Analytics — conclusão dos blocos por dia e Repetições QP (RF04.11, RF05.6 / RF05.7). */
 export function AnalyticsPage() {
@@ -92,6 +96,8 @@ function BlockCompletionCard({ days, period }: { days: BlockSummaryDay[]; period
   );
   const unmarked = totals.planned - totals.done - totals.partial - totals.skipped;
   const max = Math.max(1, ...days.map((d) => d.planned));
+  const completionRate = percent(totals.done, totals.planned);
+  const lowCompletion = totals.planned > 0 && completionRate < LOW_COMPLETION_RATE;
 
   const selectedSegment = SEGMENTS.find((seg) => seg.key === selected);
 
@@ -105,10 +111,24 @@ function BlockCompletionCard({ days, period }: { days: BlockSummaryDay[]; period
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
+        {lowCompletion && (
+          <div role="alert" className="flex gap-3 rounded-lg bg-destructive/25 p-3 text-sm">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <p>
+              <span className="font-medium">Taxa de conclusão baixa ({completionRate}%).</span> Menos de{" "}
+              {LOW_COMPLETION_RATE}% dos seus blocos foram concluídos nos últimos {period} dias. Considere ajustar seus
+              blocos na{" "}
+              <Link to="/agenda" className="font-medium underline underline-offset-2">
+                Agenda
+              </Link>{" "}
+              — duração, horário ou quantidade — para deixar o plano mais próximo do seu ritmo e melhorar a taxa.
+            </p>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">Taxa de conclusão</p>
-            <p className="mt-1 text-2xl tabular-nums">{percent(totals.done, totals.planned)}%</p>
+            <p className="mt-1 text-2xl tabular-nums">{completionRate}%</p>
           </div>
           {SEGMENTS.map((seg) => {
             const active = selected === seg.key;
