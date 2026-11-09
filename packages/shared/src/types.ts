@@ -72,6 +72,16 @@ export interface QpSummaryDay {
   incomplete: number;
 }
 
+/** Bloco marcado num dia do resumo do Analytics. */
+export interface BlockSummaryEntry {
+  blockId: string;
+  title: string;
+  color: string;
+  startTime: string;
+  endTime: string;
+  status: BlockLogStatus;
+}
+
 /** Blocos planejados no dia e como foram marcados (RF04.11); planned − done − partial − skipped = sem registro. */
 export interface BlockSummaryDay {
   date: string;
@@ -79,6 +89,8 @@ export interface BlockSummaryDay {
   done: number;
   partial: number;
   skipped: number;
+  /** Os blocos marcados no dia (concluídos, parciais e não realizados), pela ordem de início. */
+  marked: BlockSummaryEntry[];
 }
 
 export interface AuthResponse {

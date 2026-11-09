@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import {
   addDays,
   weekdayOf,
+  type BlockLogStatus,
   type BlockSummaryDay,
   type CompassTodayDTO,
   type QpSummaryDay,
@@ -70,12 +72,15 @@ export function AnalyticsPage() {
 }
 
 const SEGMENTS = [
-  { key: "done", label: "Concluído", className: "bg-status-done" },
-  { key: "partial", label: "Parcial", className: "bg-status-partial" },
-  { key: "skipped", label: "Não realizado", className: "bg-status-skipped" },
-] as const;
+  { key: "done", status: "DONE", label: "Concluído", plural: "Concluídos", className: "bg-status-done" },
+  { key: "partial", status: "PARTIAL", label: "Parcial", plural: "Parciais", className: "bg-status-partial" },
+  { key: "skipped", status: "SKIPPED", label: "Não realizado", plural: "Não realizados", className: "bg-status-skipped" },
+] as const satisfies readonly { key: string; status: BlockLogStatus; label: string; plural: string; className: string }[];
+
+type SegmentKey = (typeof SEGMENTS)[number]["key"];
 
 function BlockCompletionCard({ days, period }: { days: BlockSummaryDay[]; period: Period }) {
+  const [selected, setSelected] = useState<SegmentKey | null>(null);
   const totals = days.reduce(
     (s, d) => ({
       planned: s.planned + d.planned,
@@ -88,12 +93,7 @@ function BlockCompletionCard({ days, period }: { days: BlockSummaryDay[]; period
   const unmarked = totals.planned - totals.done - totals.partial - totals.skipped;
   const max = Math.max(1, ...days.map((d) => d.planned));
 
-  const stats = [
-    { label: "Taxa de conclusão", value: `${percent(totals.done, totals.planned)}%` },
-    { label: "Concluídos", value: totals.done, swatch: "bg-status-done" },
-    { label: "Parciais", value: totals.partial, swatch: "bg-status-partial" },
-    { label: "Não realizados", value: totals.skipped, swatch: "bg-status-skipped" },
-  ];
+  const selectedSegment = SEGMENTS.find((seg) => seg.key === selected);
 
   return (
     <Card>
@@ -105,64 +105,148 @@ function BlockCompletionCard({ days, period }: { days: BlockSummaryDay[]; period
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {stats.map((s) => (
-            <div key={s.label} className="rounded-lg border p-3">
-              <dt className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                {s.swatch && <span className={cn("size-2.5 rounded-full", s.swatch)} aria-hidden />}
-                {s.label}
-              </dt>
-              <dd className="mt-1 text-2xl tabular-nums">{s.value}</dd>
-            </div>
-          ))}
-        </dl>
-
-        <ol className="flex h-48 items-end gap-1 sm:gap-2" aria-label="Blocos por dia">
-          {days.map((d, i) => {
-            const rate = percent(d.done, d.planned);
-            const unmarkedDay = d.planned - d.done - d.partial - d.skipped;
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-lg border p-3">
+            <p className="text-xs text-muted-foreground">Taxa de conclusão</p>
+            <p className="mt-1 text-2xl tabular-nums">{percent(totals.done, totals.planned)}%</p>
+          </div>
+          {SEGMENTS.map((seg) => {
+            const active = selected === seg.key;
             return (
-              <li key={d.date} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
-                {period === 7 && (
-                  <span className="text-xs tabular-nums text-muted-foreground">{d.planned ? `${rate}%` : "–"}</span>
+              <div
+                key={seg.key}
+                className={cn(
+                  "relative rounded-lg border transition-colors",
+                  active ? "border-foreground/40 bg-muted" : "hover:bg-muted/50",
                 )}
-                <div
-                  className="flex w-full flex-col-reverse overflow-hidden rounded-t-md transition-[height] duration-300"
-                  style={{ height: `${(d.planned / max) * 128}px`, minHeight: d.planned ? 4 : 0 }}
-                  title={`${shortDate(d.date)}: ${d.done} concluídos, ${d.partial} parciais, ${d.skipped} não realizados, ${unmarkedDay} sem registro`}
-                  aria-hidden
+              >
+                <button
+                  type="button"
+                  className="w-full rounded-lg p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-pressed={active}
+                  aria-controls="block-completion-detail"
+                  onClick={() => setSelected(active ? null : seg.key)}
                 >
-                  {SEGMENTS.map((seg) =>
-                    d[seg.key] ? <div key={seg.key} className={seg.className} style={{ flexGrow: d[seg.key] }} /> : null,
-                  )}
-                  {unmarkedDay > 0 && (
-                    <div className="border border-dashed border-muted-foreground/40 bg-muted" style={{ flexGrow: unmarkedDay }} />
-                  )}
-                </div>
-                {!d.planned && <div className="h-1 w-full rounded-t-md bg-muted" aria-hidden />}
-                <span className="h-4 text-xs text-muted-foreground">{axisLabel(d.date, i, period, days.length)}</span>
-                <span className="sr-only">
-                  {d.date}: {d.planned} planejados, {d.done} concluídos, {d.partial} parciais, {d.skipped} não realizados,{" "}
-                  {unmarkedDay} sem registro
-                </span>
-              </li>
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className={cn("size-2.5 rounded-full", seg.className)} aria-hidden />
+                    {seg.plural}
+                  </span>
+                  <span className="mt-1 block text-2xl tabular-nums">{totals[seg.key]}</span>
+                </button>
+                {active && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute right-1 top-1 size-7"
+                    aria-label="Fechar e voltar ao gráfico"
+                    title="Voltar ao gráfico"
+                    onClick={() => setSelected(null)}
+                  >
+                    <X className="size-4" />
+                  </Button>
+                )}
+              </div>
             );
           })}
-        </ol>
+        </div>
 
-        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legenda">
-          {SEGMENTS.map((seg) => (
-            <li key={seg.key} className="flex items-center gap-1.5">
-              <span className={cn("size-2.5 rounded-sm", seg.className)} aria-hidden /> {seg.label}
-            </li>
-          ))}
-          <li className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-sm border border-dashed border-muted-foreground/40 bg-muted" aria-hidden /> Sem
-            registro
-          </li>
-        </ul>
+        {selectedSegment ? (
+          <BlockList id="block-completion-detail" days={days} segment={selectedSegment} />
+        ) : (
+          <BlockChart days={days} period={period} max={max} />
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+/** Blocos com o status escolhido, do dia mais recente para o mais antigo. */
+function BlockList({ id, days, segment }: { id: string; days: BlockSummaryDay[]; segment: (typeof SEGMENTS)[number] }) {
+  const groups = days
+    .map((d) => ({ date: d.date, blocks: d.marked.filter((b) => b.status === segment.status) }))
+    .filter((g) => g.blocks.length)
+    .reverse();
+
+  if (!groups.length) {
+    return (
+      <p id={id} className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+        Nenhum bloco {segment.label.toLowerCase()} no período.
+      </p>
+    );
+  }
+
+  return (
+    <div id={id} className="flex max-h-80 flex-col gap-4 overflow-y-auto pr-1" aria-label={`Blocos ${segment.plural.toLowerCase()}`}>
+      {groups.map((g) => (
+        <section key={g.date} className="flex flex-col gap-1.5">
+          <h3 className="text-xs font-medium text-muted-foreground">
+            {WEEKDAY_LABELS[weekdayOf(g.date)]}, {shortDate(g.date)}
+          </h3>
+          <ul className="flex flex-col gap-1.5">
+            {g.blocks.map((b) => (
+              <li key={b.blockId} className="flex items-center gap-3 rounded-md border px-3 py-2 text-sm">
+                <span className="h-5 w-1 shrink-0 rounded-full" style={{ backgroundColor: b.color }} aria-hidden />
+                <span className="min-w-0 flex-1 truncate">{b.title}</span>
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {b.startTime}–{b.endTime}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function BlockChart({ days, period, max }: { days: BlockSummaryDay[]; period: Period; max: number }) {
+  return (
+    <>
+      <ol className="flex h-48 items-end gap-1 sm:gap-2" aria-label="Blocos por dia">
+        {days.map((d, i) => {
+          const rate = percent(d.done, d.planned);
+          const unmarkedDay = d.planned - d.done - d.partial - d.skipped;
+          return (
+            <li key={d.date} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
+              {period === 7 && (
+                <span className="text-xs tabular-nums text-muted-foreground">{d.planned ? `${rate}%` : "–"}</span>
+              )}
+              <div
+                className="flex w-full flex-col-reverse overflow-hidden rounded-t-md transition-[height] duration-300"
+                style={{ height: `${(d.planned / max) * 128}px`, minHeight: d.planned ? 4 : 0 }}
+                title={`${shortDate(d.date)}: ${d.done} concluídos, ${d.partial} parciais, ${d.skipped} não realizados, ${unmarkedDay} sem registro`}
+                aria-hidden
+              >
+                {SEGMENTS.map((seg) =>
+                  d[seg.key] ? <div key={seg.key} className={seg.className} style={{ flexGrow: d[seg.key] }} /> : null,
+                )}
+                {unmarkedDay > 0 && (
+                  <div className="border border-dashed border-muted-foreground/40 bg-muted" style={{ flexGrow: unmarkedDay }} />
+                )}
+              </div>
+              {!d.planned && <div className="h-1 w-full rounded-t-md bg-muted" aria-hidden />}
+              <span className="h-4 text-xs text-muted-foreground">{axisLabel(d.date, i, period, days.length)}</span>
+              <span className="sr-only">
+                {d.date}: {d.planned} planejados, {d.done} concluídos, {d.partial} parciais, {d.skipped} não realizados,{" "}
+                {unmarkedDay} sem registro
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground" aria-label="Legenda">
+        {SEGMENTS.map((seg) => (
+          <li key={seg.key} className="flex items-center gap-1.5">
+            <span className={cn("size-2.5 rounded-sm", seg.className)} aria-hidden /> {seg.label}
+          </li>
+        ))}
+        <li className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-sm border border-dashed border-muted-foreground/40 bg-muted" aria-hidden /> Sem
+          registro
+        </li>
+      </ul>
+    </>
   );
 }
 
