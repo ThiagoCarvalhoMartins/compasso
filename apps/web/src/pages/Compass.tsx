@@ -21,6 +21,11 @@ import { formatLongDate, humanDuration, zonedNow } from "../lib/time";
 
 const MUTE_MINUTES = 30;
 const STATUS_LABEL: Record<BlockLogStatus, string> = { DONE: "Concluído", PARTIAL: "Parcial", SKIPPED: "Não realizado" };
+const STATUS_CHIP: Record<BlockLogStatus, string> = {
+  DONE: "bg-status-done text-status-done-foreground",
+  PARTIAL: "bg-status-partial text-status-partial-foreground",
+  SKIPPED: "bg-status-skipped text-status-skipped-foreground",
+};
 const MARK_BLOCK_KEY = ["mark-block"];
 
 type MarkBlockVariables = { blockId: string; status: BlockLogStatus };
@@ -260,7 +265,7 @@ export function CompassPage() {
               .filter((b) => b.log)
               .map((b) => (
                 <li key={b.id}>
-                  <Badge>
+                  <Badge className={STATUS_CHIP[b.log!]}>
                     {b.title}: {STATUS_LABEL[b.log!]}
                   </Badge>
                 </li>

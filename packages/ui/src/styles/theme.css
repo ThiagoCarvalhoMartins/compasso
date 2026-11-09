@@ -41,6 +41,13 @@
   --error: #9b4a37; /* mensagens de erro em texto pequeno */
   --overlay: rgb(61 58 54 / 0.25);
   --qp-surface: #f4f1fa; /* fundo da sessão QP em tela cheia */
+  /* Status do bloco no dia (RF04.11): pastéis com texto grafite (AA) */
+  --status-done: #a8c3a0; /* Sálvia */
+  --status-done-foreground: #3d3a36;
+  --status-partial: #e2dacd; /* Cinza quente */
+  --status-partial-foreground: #3d3a36;
+  --status-skipped: #f2c29b; /* Laranja pêssego */
+  --status-skipped-foreground: #3d3a36;
 }
 
 /* Modo escuro: grafite quente; as cores de ação escurecem para manter o texto claro legível (AA). */
@@ -71,6 +78,12 @@
   --error: #eea997;
   --overlay: rgb(0 0 0 / 0.55);
   --qp-surface: #25212f;
+  --status-done: #4f6f49;
+  --status-done-foreground: #f3efe7;
+  --status-partial: #4a4640;
+  --status-partial-foreground: #f3efe7;
+  --status-skipped: #7d5333;
+  --status-skipped-foreground: #f3efe7;
 }
 
 @theme inline {
@@ -99,6 +112,12 @@
   --color-error: var(--error);
   --color-overlay: var(--overlay);
   --color-qp-surface: var(--qp-surface);
+  --color-status-done: var(--status-done);
+  --color-status-done-foreground: var(--status-done-foreground);
+  --color-status-partial: var(--status-partial);
+  --color-status-partial-foreground: var(--status-partial-foreground);
+  --color-status-skipped: var(--status-skipped);
+  --color-status-skipped-foreground: var(--status-skipped-foreground);
 
   --radius-sm: calc(var(--radius) - 6px);
   --radius-md: calc(var(--radius) - 4px);
