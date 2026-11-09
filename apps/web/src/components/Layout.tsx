@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { CalendarDays, Compass, LogOut, Moon, Sparkles, UserRound } from "lucide-react";
+import { CalendarDays, ChartColumn, Compass, LogOut, Moon, UserRound } from "lucide-react";
 import {
   Avatar,
   DropdownMenu,
@@ -15,7 +15,7 @@ import { useTheme } from "../lib/theme";
 const links = [
   { to: "/", label: "Compasso", icon: Compass, end: true },
   { to: "/agenda", label: "Agenda", icon: CalendarDays },
-  { to: "/qp", label: "Repetições QP", icon: Sparkles },
+  { to: "/analytics", label: "Analytics", icon: ChartColumn },
   { to: "/perfil", label: "Perfil", icon: UserRound },
 ];
 
