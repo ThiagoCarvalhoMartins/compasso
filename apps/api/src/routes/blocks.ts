@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   addDays,
   blockAppliesOn,
-  blockDeleteQuerySchema,
+  blockScopeQuerySchema,
   blockInputSchema,
   blockLogSchema,
   blocksForDate,
@@ -67,14 +67,68 @@ blocksRouter.post("/", async (req, res) => {
   res.status(201).json(toBlockDTO(created));
 });
 
-// RF03.3 — editar um recorrente afeta todos os dias em que ele se repete
+// RF03.3 — editar um recorrente afeta todos os dias em que ele se repete;
+// com ?scope=single|following&date=, só aquele dia ou ele e os seguintes (a série é dividida).
 blocksRouter.patch("/:id", async (req, res) => {
   const id = userId(req);
+  const { scope, date } = parse(blockScopeQuerySchema, req.query);
   const current = await prisma.block.findFirst({ where: { id: req.params.id, userId: id } });
   if (!current) throw notFound();
   const before = toBlockDTO(current);
   const merged = { ...before, ...req.body };
-  const block = normalizeBlock(parse(blockInputSchema, merged), before);
+  const input = parse(blockInputSchema, merged);
+
+  if (scope && date && before.recurrence === "REPEAT" && input.recurrence === "REPEAT") {
+    if (!blockAppliesOn(before, date)) throw badRequest(t("block.notOnDate"), "NOT_ON_DATE");
+    const following = scope === "following";
+    const edited = normalizeBlock(input);
+    // O que sobra da série original, sem o trecho editado.
+    const rest = following
+      ? { ...before, endsOn: addDays(date, -1), excludedDates: before.excludedDates.filter((d) => d < date) }
+      : { ...before, excludedDates: [...before.excludedDates, date].sort() };
+    // O trecho editado vira um bloco próprio: um único dia, ou uma nova série a partir da data.
+    const piece = following
+      ? {
+          ...edited,
+          startsOn: date,
+          endsOn: before.endsOn,
+          excludedDates: before.excludedDates.filter((d) => d > date),
+        }
+      : { ...edited, recurrence: "ONCE" as const, date, repeatWeekdays: [], startsOn: null, endsOn: null, excludedDates: [] };
+    if (!seriesHasOccurrences(piece)) throw badRequest(t("block.noOccurrences"), "NO_OCCURRENCES");
+    await assertCategory(id, piece.categoryId);
+
+    const restRemains = seriesHasOccurrences(rest);
+    const others = (await listUserBlocks(id)).filter((b) => b.id !== before.id);
+    await assertBlockAllowed(
+      id,
+      await userTimezone(id),
+      restRemains ? piece : { ...piece, id: before.id },
+      { checkPastDate: false, existing: restRemains ? [...others, rest] : others },
+    );
+
+    if (!restRemains) {
+      // Nada sobra da série original (ex.: editar "este e os seguintes" no primeiro dia): atualiza no lugar.
+      const updated = await prisma.block.update({ where: { id: before.id }, data: toBlockData(piece) });
+      res.json(toBlockDTO(updated));
+      return;
+    }
+    // O histórico dos dias editados acompanha o novo bloco.
+    const dbDate = toDbDate(date);
+    const created = await prisma.$transaction(async (tx) => {
+      await tx.block.update({ where: { id: before.id }, data: toBlockData(rest) });
+      const novo = await tx.block.create({ data: { ...toBlockData(piece), userId: id } });
+      await tx.blockLog.updateMany({
+        where: { blockId: before.id, date: following ? { gte: dbDate } : dbDate },
+        data: { blockId: novo.id },
+      });
+      return novo;
+    });
+    res.json(toBlockDTO(created));
+    return;
+  }
+
+  const block = normalizeBlock(input, before);
   if (!seriesHasOccurrences(block)) throw badRequest(t("block.noOccurrences"), "NO_OCCURRENCES");
   await assertCategory(id, block.categoryId);
   const dateChanged = block.recurrence === "ONCE" && block.date !== toBlockDTO(current).date;
@@ -85,7 +139,7 @@ blocksRouter.patch("/:id", async (req, res) => {
 
 // ?scope=single|following&date= exclui parte de um recorrente; sem parâmetros, o bloco inteiro.
 blocksRouter.delete("/:id", async (req, res) => {
-  const { scope, date } = parse(blockDeleteQuerySchema, req.query);
+  const { scope, date } = parse(blockScopeQuerySchema, req.query);
   const where = { id: req.params.id, userId: userId(req) };
   const current = await prisma.block.findFirst({ where });
   if (!current) throw notFound();

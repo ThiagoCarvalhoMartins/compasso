@@ -45,12 +45,13 @@ export async function assertBlockAllowed(
   userId: string,
   timezone: string,
   candidate: Omit<BlockDTO, "id"> & { id?: string },
-  { checkPastDate }: { checkPastDate: boolean },
+  { checkPastDate, existing }: { checkPastDate: boolean; existing?: BlockDTO[] },
 ) {
   if (checkPastDate && candidate.recurrence === "ONCE" && candidate.date! < todayIn(timezone)) {
     throw badRequest(t("block.pastDate"), "PAST_DATE");
   }
-  const existing = await listUserBlocks(userId);
+  // `existing` permite validar contra a agenda já com a série original cortada (edição de parte dela).
+  existing ??= await listUserBlocks(userId);
   const overlap = findOverlap(candidate, existing);
   if (overlap) {
     throw conflict(
