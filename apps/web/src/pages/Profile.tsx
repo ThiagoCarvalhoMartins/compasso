@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -20,6 +20,10 @@ import {
   Input,
   Label,
   Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   downloadBlob,
   toast,
 } from "@compasso/ui";
@@ -64,7 +68,7 @@ export function ProfilePage() {
 // RF02.1 / RF02.2
 function ProfileCard({ user, onSaved }: { user: UserDTO; onSaved: (u: UserDTO) => void }) {
   const qc = useQueryClient();
-  const { register, handleSubmit, formState } = useForm<ProfileForm>({
+  const { register, control, handleSubmit, formState } = useForm<ProfileForm>({
     resolver: zodResolver(profileForm),
     defaultValues: {
       name: user.name,
@@ -101,13 +105,24 @@ function ProfileCard({ user, onSaved }: { user: UserDTO; onSaved: (u: UserDTO) =
             <Input id="avatarUrl" type="url" placeholder="https://…" {...register("avatarUrl")} />
           </Field>
           <Field label="Fuso horário" htmlFor="timezone" hint={`Detectado no navegador: ${browserTimezone()}`} className="sm:col-span-2">
-            <Select id="timezone" {...register("timezone")}>
-              {timezones.map((tz) => (
-                <option key={tz} value={tz}>
-                  {tz.replace(/_/g, " ")}
-                </option>
-              ))}
-            </Select>
+            <Controller
+              control={control}
+              name="timezone"
+              render={({ field }) => (
+                <Select name={field.name} value={field.value} onValueChange={field.onChange} disabled={field.disabled}>
+                  <SelectTrigger id="timezone" ref={field.ref} onBlur={field.onBlur} aria-describedby="timezone-hint">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {timezones.map((tz) => (
+                      <SelectItem key={tz} value={tz}>
+                        {tz.replace(/_/g, " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </Field>
           <p className="text-sm text-muted-foreground sm:col-span-2">E-mail: {user.email}</p>
           <Button type="submit" className="justify-self-start" disabled={save.isPending}>
@@ -151,12 +166,17 @@ function AlertsCard() {
         </label>
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Som" htmlFor="sound">
-            <Select id="sound" value={s.alertSound} onChange={(e) => setS({ ...s, alertSound: e.target.value as SettingsDTO["alertSound"] })}>
-              {ALERT_SOUNDS.map((v) => (
-                <option key={v} value={v}>
-                  {SOUND_LABEL[v]}
-                </option>
-              ))}
+            <Select value={s.alertSound} onValueChange={(v) => setS({ ...s, alertSound: v as SettingsDTO["alertSound"] })}>
+              <SelectTrigger id="sound">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ALERT_SOUNDS.map((v) => (
+                  <SelectItem key={v} value={v}>
+                    {SOUND_LABEL[v]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </Field>
           <div className="flex flex-col gap-1.5">
@@ -173,12 +193,17 @@ function AlertsCard() {
             />
           </div>
           <Field label="Aviso antes do fim" htmlFor="endAlert">
-            <Select id="endAlert" value={s.endAlertMinutes} onChange={(e) => setS({ ...s, endAlertMinutes: Number(e.target.value) })}>
-              {[1, 2, 3, 5, 10, 15].map((m) => (
-                <option key={m} value={m}>
-                  {m} min
-                </option>
-              ))}
+            <Select value={String(s.endAlertMinutes)} onValueChange={(v) => setS({ ...s, endAlertMinutes: Number(v) })}>
+              <SelectTrigger id="endAlert">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 5, 10, 15].map((m) => (
+                  <SelectItem key={m} value={String(m)}>
+                    {m} min
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </Field>
         </div>

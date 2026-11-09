@@ -2,7 +2,17 @@ export { cn } from "./lib/utils";
 export { ApiError, createApiClient, downloadBlob, type ApiClient } from "./lib/api-client";
 export { Button, buttonVariants, type ButtonProps } from "./components/button";
 export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/card";
-export { Field, Input, Label, PasswordInput, Select, Textarea } from "./components/form";
+export { Field, Input, Label, PasswordInput, Textarea } from "./components/form";
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "./components/select";
 export { Progress } from "./components/progress";
 export { Spinner } from "./components/spinner";
 export {

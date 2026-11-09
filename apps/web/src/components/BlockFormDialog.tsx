@@ -23,12 +23,19 @@ import {
   Input,
   Label,
   Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Textarea,
   cn,
   toast,
 } from "@compasso/ui";
 import { api } from "../lib/api";
 import { WEEKDAY_LABELS, formatShortDate } from "../lib/time";
+
+/** O Select do Radix não aceita item com valor vazio; este valor representa a opção "Sem categoria". */
+const NO_CATEGORY = "__none__";
 
 interface FormValues {
   title: string;
@@ -287,13 +294,21 @@ export function BlockFormDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Categoria" htmlFor="categoryId">
-              <Select id="categoryId" value={watch("categoryId")} onChange={(e) => onCategory(e.target.value)}>
-                <option value="">Sem categoria</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
+              <Select
+                value={watch("categoryId") || NO_CATEGORY}
+                onValueChange={(v) => onCategory(v === NO_CATEGORY ? "" : v)}
+              >
+                <SelectTrigger id="categoryId">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_CATEGORY}>Sem categoria</SelectItem>
+                  {categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </Field>
             <div className="flex flex-col gap-1.5">

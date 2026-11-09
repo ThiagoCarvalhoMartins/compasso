@@ -13,6 +13,10 @@ import {
   Input,
   Label,
   Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Table,
   TBody,
   TD,
@@ -22,6 +26,9 @@ import {
   toast,
 } from "@compasso/ui";
 import { ROLE_LABEL, STATUS_LABEL, api, formatDateTime, useAdmin } from "../lib";
+
+/** O Select do Radix não aceita item com valor vazio; este valor representa a opção "Todos". */
+const ALL = "__all__";
 
 type AdminUser = UserDTO & { createdAt: string; lastLoginAt: string | null };
 interface Page<T> {
@@ -45,10 +52,12 @@ export function UsersPage() {
     queryFn: () => api.get<Page<AdminUser>>(`/admin/users?${params}`),
     placeholderData: keepPreviousData,
   });
-  const set = (k: keyof typeof filters) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const setFilter = (k: keyof typeof filters, v: string) => {
     setPage(1);
-    setFilters((f) => ({ ...f, [k]: e.target.value }));
+    setFilters((f) => ({ ...f, [k]: v }));
   };
+  const set = (k: keyof typeof filters) => (e: React.ChangeEvent<HTMLInputElement>) => setFilter(k, e.target.value);
+  const setSelect = (k: keyof typeof filters) => (v: string) => setFilter(k, v === ALL ? "" : v);
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
 
   return (
@@ -62,21 +71,31 @@ export function UsersPage() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="status">Status</Label>
-            <Select id="status" value={filters.status} onChange={set("status")}>
-              <option value="">Todos</option>
-              {Object.entries(STATUS_LABEL).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
-              ))}
+            <Select value={filters.status || ALL} onValueChange={setSelect("status")}>
+              <SelectTrigger id="status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>Todos</SelectItem>
+                {Object.entries(STATUS_LABEL).map(([v, l]) => (
+                  <SelectItem key={v} value={v}>
+                    {l}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="loginType">Login</Label>
-            <Select id="loginType" value={filters.loginType} onChange={set("loginType")}>
-              <option value="">Todos</option>
-              <option value="email">E-mail</option>
-              <option value="google">Google</option>
+            <Select value={filters.loginType || ALL} onValueChange={setSelect("loginType")}>
+              <SelectTrigger id="loginType">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>Todos</SelectItem>
+                <SelectItem value="email">E-mail</SelectItem>
+                <SelectItem value="google">Google</SelectItem>
+              </SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-2">
