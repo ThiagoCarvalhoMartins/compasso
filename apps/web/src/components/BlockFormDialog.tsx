@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 import {
   BLOCK_COLORS,
   blockInputSchema,
@@ -307,9 +307,14 @@ export function BlockFormDialog({
                     aria-checked={color === c}
                     aria-label={c}
                     onClick={() => setValue("color", c)}
-                    className={cn("size-8 rounded-full border-2", color === c ? "border-foreground" : "border-transparent")}
+                    className={cn(
+                      "flex size-8 items-center justify-center rounded-full border-2",
+                      color === c ? "border-foreground" : "border-transparent",
+                    )}
                     style={{ background: c }}
-                  />
+                  >
+                    {color === c && <Check className="size-4 text-neutral-800" strokeWidth={3} aria-hidden />}
+                  </button>
                 ))}
               </div>
             </div>
