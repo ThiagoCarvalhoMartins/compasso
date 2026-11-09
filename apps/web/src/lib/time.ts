@@ -23,6 +23,9 @@ export function formatShortDate(date: string): string {
 
 export const browserTimezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+/** Data de hoje ("yyyy-MM-dd") no fuso do navegador. */
+export const todayInBrowser = () => zonedNow(Date.now(), browserTimezone()).date;
+
 export const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 /** "1h 05min" / "12min" */

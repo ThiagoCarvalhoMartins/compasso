@@ -5,12 +5,12 @@ import { addDays, blocksForDate, startOfWeek, weekdayOf, type BlockDTO } from "@
 import {
   Button,
   Dialog,
+  DatePicker,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   Field,
-  Input,
   cn,
   toast,
 } from "@compasso/ui";
@@ -191,10 +191,10 @@ function CopyDayDialog({
         <p className="mb-4 text-sm text-muted-foreground">Os blocos são copiados como "Apenas neste dia" na data de destino.</p>
         <div className="grid grid-cols-2 gap-3">
           <Field label="De" htmlFor="copy-from">
-            <Input id="copy-from" type="date" value={fromDate} onChange={(e) => setFrom(e.target.value)} />
+            <DatePicker id="copy-from" value={fromDate} onChange={setFrom} />
           </Field>
           <Field label="Para" htmlFor="copy-to">
-            <Input id="copy-to" type="date" min={today} value={toDate} onChange={(e) => setTo(e.target.value)} />
+            <DatePicker id="copy-to" min={today} value={toDate} onChange={setTo} />
           </Field>
         </div>
         <DialogFooter>

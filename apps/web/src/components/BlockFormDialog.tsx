@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Trash2 } from "lucide-react";
 import {
@@ -22,6 +22,7 @@ import {
   Field,
   Input,
   Label,
+  DatePicker,
   Select,
   SelectContent,
   SelectItem,
@@ -90,7 +91,7 @@ export function BlockFormDialog({
     queryKey: ["categories"],
     queryFn: () => api.get<CategoryDTO[]>("/categories"),
   });
-  const { register, handleSubmit, watch, setValue, reset } = useForm<FormValues>({
+  const { register, control, handleSubmit, watch, setValue, reset } = useForm<FormValues>({
     defaultValues: toForm(draft, defaultDate),
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -289,7 +290,20 @@ export function BlockFormDialog({
             htmlFor="date"
             error={errors.date}
           >
-            <Input id="date" type="date" {...register("date")} />
+            <Controller
+              control={control}
+              name="date"
+              render={({ field }) => (
+                <DatePicker
+                  id="date"
+                  ref={field.ref}
+                  name={field.name}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                />
+              )}
+            />
           </Field>
 
           <div className="grid grid-cols-2 gap-3">

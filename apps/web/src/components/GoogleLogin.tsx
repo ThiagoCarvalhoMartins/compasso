@@ -5,18 +5,18 @@ import {
   ApiError,
   Button,
   Dialog,
+  DatePicker,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
   Field,
-  Input,
   toast,
 } from "@compasso/ui";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { browserTimezone } from "../lib/time";
+import { browserTimezone, todayInBrowser } from "../lib/time";
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
@@ -98,7 +98,13 @@ export function GoogleLogin() {
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <Field label="Data de nascimento" htmlFor="g-birth" error={error}>
-              <Input id="g-birth" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+              <DatePicker
+                id="g-birth"
+                value={birthDate}
+                onChange={setBirthDate}
+                max={todayInBrowser()}
+                captionLayout="dropdown"
+              />
             </Field>
             <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" className="mt-0.5" checked={accept} onChange={(e) => setAccept(e.target.checked)} />

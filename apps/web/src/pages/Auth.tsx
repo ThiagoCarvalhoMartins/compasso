@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { z } from "zod";
@@ -11,11 +11,11 @@ import {
   type AuthResponse,
   type LoginInput,
 } from "@compasso/shared";
-import { ApiError, Button, Card, CardContent, Field, Input, PasswordInput } from "@compasso/ui";
+import { ApiError, Button, Card, CardContent, DatePicker, Field, Input, PasswordInput } from "@compasso/ui";
 import { GoogleLogin } from "../components/GoogleLogin";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
-import { browserTimezone } from "../lib/time";
+import { browserTimezone, todayInBrowser } from "../lib/time";
 
 function AuthShell({ title, subtitle, children }: { title: string; subtitle?: ReactNode; children: ReactNode }) {
   return (
@@ -101,7 +101,7 @@ export function LoginPage() {
 export function RegisterPage() {
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { register, handleSubmit, formState } = useForm<z.input<typeof registerSchema>>({
+  const { register, control, handleSubmit, formState } = useForm<z.input<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
   });
   const e = formState.errors;
@@ -140,7 +140,22 @@ export function RegisterPage() {
           <PasswordInput id="password" autoComplete="new-password" {...register("password")} />
         </Field>
         <Field label="Data de nascimento" htmlFor="birthDate" error={e.birthDate?.message} hint="É preciso ter pelo menos 13 anos.">
-          <Input id="birthDate" type="date" {...register("birthDate")} />
+          <Controller
+            control={control}
+            name="birthDate"
+            render={({ field }) => (
+              <DatePicker
+                id="birthDate"
+                ref={field.ref}
+                name={field.name}
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                max={todayInBrowser()}
+                captionLayout="dropdown"
+              />
+            )}
+          />
         </Field>
         <div className="flex flex-col gap-1">
           <label className="flex items-start gap-2 text-sm">

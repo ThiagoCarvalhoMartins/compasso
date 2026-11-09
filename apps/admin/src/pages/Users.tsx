@@ -12,6 +12,7 @@ import {
   CardTitle,
   Input,
   Label,
+  DatePicker,
   Select,
   SelectContent,
   SelectItem,
@@ -101,11 +102,23 @@ export function UsersPage() {
           <div className="grid grid-cols-2 gap-2">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="from">Cadastro de</Label>
-              <Input id="from" type="date" value={filters.createdFrom} onChange={set("createdFrom")} />
+              <DatePicker
+                id="from"
+                clearable
+                value={filters.createdFrom}
+                onChange={(v) => setFilter("createdFrom", v)}
+                max={filters.createdTo || undefined}
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="to">até</Label>
-              <Input id="to" type="date" value={filters.createdTo} onChange={set("createdTo")} />
+              <DatePicker
+                id="to"
+                clearable
+                value={filters.createdTo}
+                onChange={(v) => setFilter("createdTo", v)}
+                min={filters.createdFrom || undefined}
+              />
             </div>
           </div>
         </CardContent>

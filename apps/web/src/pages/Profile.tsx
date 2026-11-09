@@ -19,6 +19,7 @@ import {
   Field,
   Input,
   Label,
+  DatePicker,
   Select,
   SelectContent,
   SelectItem,
@@ -30,7 +31,7 @@ import {
 import { api } from "../lib/api";
 import { playAlert, unlockAudio } from "../lib/audio";
 import { useAuth } from "../lib/auth";
-import { browserTimezone } from "../lib/time";
+import { browserTimezone, todayInBrowser } from "../lib/time";
 
 const profileForm = z.object({
   name: nameSchema,
@@ -99,7 +100,22 @@ function ProfileCard({ user, onSaved }: { user: UserDTO; onSaved: (u: UserDTO) =
             <Input id="name" {...register("name")} />
           </Field>
           <Field label="Data de nascimento" htmlFor="birthDate" error={e.birthDate?.message}>
-            <Input id="birthDate" type="date" {...register("birthDate")} />
+            <Controller
+              control={control}
+              name="birthDate"
+              render={({ field }) => (
+                <DatePicker
+                  id="birthDate"
+                  ref={field.ref}
+                  name={field.name}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  max={todayInBrowser()}
+                  captionLayout="dropdown"
+                />
+              )}
+            />
           </Field>
           <Field label="Foto (link da imagem)" htmlFor="avatarUrl" error={e.avatarUrl?.message} className="sm:col-span-2">
             <Input id="avatarUrl" type="url" placeholder="https://…" {...register("avatarUrl")} />
