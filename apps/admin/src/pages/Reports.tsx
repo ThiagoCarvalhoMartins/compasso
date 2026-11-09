@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { addDays } from "@compasso/shared";
-import { Button, Card, CardContent, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TBody, TD, TH, THead, TR, downloadBlob, toast } from "@compasso/ui";
+import { Button, Card, CardContent, DatePicker, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TBody, TD, TH, THead, TR, downloadBlob, toast } from "@compasso/ui";
 import { AGE_GROUPS, api } from "../lib";
 
 /** O Select do Radix não aceita item com valor vazio; este valor representa a opção "Todas". */
@@ -58,11 +58,11 @@ export function ReportsPage() {
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="from">De</Label>
-            <Input id="from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <DatePicker id="from" value={from} onChange={setFrom} max={to} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="to">Até</Label>
-            <Input id="to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            <DatePicker id="to" value={to} onChange={setTo} min={from} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="age">Faixa etária</Label>
