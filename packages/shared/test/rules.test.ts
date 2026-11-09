@@ -226,9 +226,11 @@ describe("resumo diário dos blocos (Analytics)", () => {
   it("conta planejados e status por dia, ignorando logs de dias em que o bloco não vale", () => {
     // 2026-11-09 é segunda; a série vale seg e qua.
     const blocks = [
-      { id: "a", ...repeat([1, 3], "2026-11-09", "08:00", "09:00") },
-      { id: "b", ...once("2026-11-09", "10:00", "11:00") },
+      { id: "b", title: "Leitura", color: "#00f", ...once("2026-11-09", "10:00", "11:00") },
+      { id: "a", title: "Treino", color: "#f00", ...repeat([1, 3], "2026-11-09", "08:00", "09:00") },
     ];
+    const treino = { blockId: "a", title: "Treino", color: "#f00", startTime: "08:00", endTime: "09:00" };
+    const leitura = { blockId: "b", title: "Leitura", color: "#00f", startTime: "10:00", endTime: "11:00" };
     const logs = [
       { blockId: "a", date: "2026-11-09", status: "DONE" as const },
       { blockId: "b", date: "2026-11-09", status: "SKIPPED" as const },
@@ -236,9 +238,20 @@ describe("resumo diário dos blocos (Analytics)", () => {
       { blockId: "a", date: "2026-11-11", status: "PARTIAL" as const },
     ];
     expect(summarizeBlockDays(blocks, logs, ["2026-11-09", "2026-11-10", "2026-11-11"])).toEqual([
-      { date: "2026-11-09", planned: 2, done: 1, partial: 0, skipped: 1 },
-      { date: "2026-11-10", planned: 0, done: 0, partial: 0, skipped: 0 },
-      { date: "2026-11-11", planned: 1, done: 0, partial: 1, skipped: 0 },
+      {
+        date: "2026-11-09",
+        planned: 2,
+        done: 1,
+        partial: 0,
+        skipped: 1,
+        // Pela ordem de início, não pela ordem da lista.
+        marked: [
+          { ...treino, status: "DONE" },
+          { ...leitura, status: "SKIPPED" },
+        ],
+      },
+      { date: "2026-11-10", planned: 0, done: 0, partial: 0, skipped: 0, marked: [] },
+      { date: "2026-11-11", planned: 1, done: 0, partial: 1, skipped: 0, marked: [{ ...treino, status: "PARTIAL" }] },
     ]);
   });
 });

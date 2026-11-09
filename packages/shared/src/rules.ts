@@ -122,20 +122,22 @@ export function blocksForDate<T extends BlockLike>(blocks: T[], date: string): T
  * Só contam os logs de blocos que valem no dia; o que não foi marcado entra como "sem registro".
  */
 export function summarizeBlockDays(
-  blocks: (BlockLike & { id: string })[],
+  blocks: (BlockLike & { id: string; title: string; color: string })[],
   logs: { blockId: string; date: string; status: BlockLogStatus }[],
   days: string[],
 ): BlockSummaryDay[] {
   const statusOf = new Map(logs.map((l) => [`${l.blockId}|${l.date}`, l.status]));
   return days.map((date) => {
-    const day: BlockSummaryDay = { date, planned: 0, done: 0, partial: 0, skipped: 0 };
-    for (const b of blocks) {
-      if (!blockAppliesOn(b, date)) continue;
+    const day: BlockSummaryDay = { date, planned: 0, done: 0, partial: 0, skipped: 0, marked: [] };
+    for (const b of blocksForDate(blocks, date)) {
       day.planned++;
       const status = statusOf.get(`${b.id}|${date}`);
+      if (!status) continue;
       if (status === "DONE") day.done++;
       else if (status === "PARTIAL") day.partial++;
       else if (status === "SKIPPED") day.skipped++;
+      const { id: blockId, title, color, startTime, endTime } = b;
+      day.marked.push({ blockId, title, color, startTime, endTime, status });
     }
     return day;
   });
