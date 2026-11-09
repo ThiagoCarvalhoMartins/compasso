@@ -1,5 +1,5 @@
-import { MIN_BLOCK_MINUTES } from "./constants";
-import type { BlockDTO } from "./types";
+import { MIN_BLOCK_MINUTES, type BlockLogStatus } from "./constants";
+import type { BlockDTO, BlockSummaryDay } from "./types";
 
 /** Campos de bloco que as regras de agenda precisam. */
 export type BlockLike = Pick<
@@ -115,6 +115,30 @@ export function blocksForDate<T extends BlockLike>(blocks: T[], date: string): T
   return blocks
     .filter((b) => blockAppliesOn(b, date))
     .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+}
+
+/**
+ * Resumo diário dos blocos para o Analytics: quantos estavam planejados em cada dia e como foram marcados.
+ * Só contam os logs de blocos que valem no dia; o que não foi marcado entra como "sem registro".
+ */
+export function summarizeBlockDays(
+  blocks: (BlockLike & { id: string })[],
+  logs: { blockId: string; date: string; status: BlockLogStatus }[],
+  days: string[],
+): BlockSummaryDay[] {
+  const statusOf = new Map(logs.map((l) => [`${l.blockId}|${l.date}`, l.status]));
+  return days.map((date) => {
+    const day: BlockSummaryDay = { date, planned: 0, done: 0, partial: 0, skipped: 0 };
+    for (const b of blocks) {
+      if (!blockAppliesOn(b, date)) continue;
+      day.planned++;
+      const status = statusOf.get(`${b.id}|${date}`);
+      if (status === "DONE") day.done++;
+      else if (status === "PARTIAL") day.partial++;
+      else if (status === "SKIPPED") day.skipped++;
+    }
+    return day;
+  });
 }
 
 /** Os dois blocos podem cair no mesmo dia? */

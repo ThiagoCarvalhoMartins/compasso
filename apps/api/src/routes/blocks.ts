@@ -8,15 +8,18 @@ import {
   blocksForDate,
   categorySchema,
   copyDaySchema,
+  dateRange,
   dateSchema,
+  rangeQuerySchema,
   seriesHasOccurrences,
+  summarizeBlockDays,
   t,
 } from "@compasso/shared";
 import { z } from "zod";
 import { badRequest, notFound, parse } from "../lib/http";
 import { toBlockDTO, toCategoryDTO } from "../lib/mappers";
 import { prisma } from "../lib/prisma";
-import { toDbDate, todayIn } from "../lib/time";
+import { fromDbDate, toDbDate, todayIn } from "../lib/time";
 import { userId } from "../middleware/auth";
 import {
   assertBlockAllowed,
@@ -55,6 +58,24 @@ blocksRouter.get("/", async (req, res) => {
   const { date } = parse(z.object({ date: dateSchema.optional() }), req.query);
   const blocks = await listUserBlocks(userId(req));
   res.json(date ? blocksForDate(blocks, date) : blocks);
+});
+
+// Analytics — blocos planejados por dia e como foram marcados (?from=&to=, até 92 dias)
+blocksRouter.get("/summary", async (req, res) => {
+  const id = userId(req);
+  const { from, to } = parse(rangeQuerySchema, req.query);
+  if (to < from) throw badRequest("Período inválido.");
+  const days = dateRange(from, to);
+  if (days.length > 92) throw badRequest("Período máximo de 92 dias.");
+
+  const [blocks, logs] = await Promise.all([
+    listUserBlocks(id),
+    prisma.blockLog.findMany({
+      where: { userId: id, date: { gte: toDbDate(from), lte: toDbDate(to) } },
+      select: { blockId: true, date: true, status: true },
+    }),
+  ]);
+  res.json(summarizeBlockDays(blocks, logs.map((l) => ({ ...l, date: fromDbDate(l.date) })), days));
 });
 
 // RF03.1 / RF03.2

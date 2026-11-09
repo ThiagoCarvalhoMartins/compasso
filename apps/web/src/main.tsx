@@ -7,6 +7,7 @@ import { Layout } from "./components/Layout";
 import { queryClient } from "./lib/api";
 import { AuthProvider, useAuth } from "./lib/auth";
 import { AgendaPage } from "./pages/Agenda";
+import { AnalyticsPage } from "./pages/Analytics";
 import {
   ForgotPasswordPage,
   LoginPage,
@@ -17,7 +18,6 @@ import {
 } from "./pages/Auth";
 import { CompassPage } from "./pages/Compass";
 import { ProfilePage } from "./pages/Profile";
-import { QpPage } from "./pages/QpPage";
 import "./index.css";
 
 function Protected({ children }: { children: ReactNode }) {
@@ -47,7 +47,8 @@ createRoot(document.getElementById("root")!).render(
             <Route element={<Protected><Layout /></Protected>}>
               <Route index element={<CompassPage />} />
               <Route path="agenda" element={<AgendaPage />} />
-              <Route path="qp" element={<QpPage />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="qp" element={<Navigate to="/analytics" replace />} />
               <Route path="perfil" element={<ProfilePage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

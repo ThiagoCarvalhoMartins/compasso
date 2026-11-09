@@ -54,6 +54,7 @@ pnpm typecheck
 | RF03 agenda | `apps/api/src/routes/blocks.ts`, `apps/web/src/pages/Agenda.tsx`, `components/BlockFormDialog.tsx` |
 | RF04 tela Compasso, alertas, wake lock, virada do dia | `apps/web/src/pages/Compass.tsx`, `hooks/useAlerts.ts`, `hooks/useNow.ts`, `lib/audio.ts` |
 | RF05 Repetições QP | `apps/web/src/components/Qp.tsx`, `apps/api/src/routes/qp.ts` |
+| Analytics (conclusão dos blocos por dia e Repetições QP) | `apps/web/src/pages/Analytics.tsx`, `GET /blocks/summary` e `GET /qp-sessions/summary` |
 | RF06–RF09 painel, auditoria, dashboard, relatórios CSV/PDF | `apps/api/src/routes/admin.ts`, `services/reports.ts`, `apps/admin/src` |
 | RNF02 PWA | `apps/web/public/manifest.webmanifest`, `public/sw.js` |
 | RNF11 Application Insights | `apps/api/src/index.ts` (ativa com `APPLICATIONINSIGHTS_CONNECTION_STRING`) |

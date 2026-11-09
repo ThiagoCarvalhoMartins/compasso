@@ -72,6 +72,15 @@ export interface QpSummaryDay {
   incomplete: number;
 }
 
+/** Blocos planejados no dia e como foram marcados (RF04.11); planned − done − partial − skipped = sem registro. */
+export interface BlockSummaryDay {
+  date: string;
+  planned: number;
+  done: number;
+  partial: number;
+  skipped: number;
+}
+
 export interface AuthResponse {
   accessToken: string;
   user: UserDTO;
