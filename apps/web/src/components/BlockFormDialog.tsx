@@ -6,7 +6,7 @@ import {
   BLOCK_COLORS,
   blockInputSchema,
   WEEKDAYS,
-  type BlockDeleteScope,
+  type BlockScope,
   type BlockDTO,
   type CategoryDTO,
 } from "@compasso/shared";
@@ -46,7 +46,7 @@ interface FormValues {
 
 export type BlockDraft = Partial<BlockDTO> & {
   date?: string | null;
-  /** Dia em que o bloco recorrente foi aberto na agenda: referência para excluir só parte da série. */
+  /** Dia em que o bloco recorrente foi aberto na agenda: referência para excluir ou editar só parte da série. */
   occurrenceDate?: string;
 };
 
@@ -89,6 +89,8 @@ export function BlockFormDialog({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [askDeleteScope, setAskDeleteScope] = useState(false);
+  /** Edição de horário de um recorrente aguardando o usuário escolher o escopo. */
+  const [pendingEdit, setPendingEdit] = useState<unknown>(null);
 
   useEffect(() => {
     if (open) {
@@ -96,6 +98,7 @@ export function BlockFormDialog({
       setErrors({});
       setFormError(null);
       setAskDeleteScope(false);
+      setPendingEdit(null);
     }
   }, [open, draft, defaultDate, reset]);
 
@@ -112,14 +115,31 @@ export function BlockFormDialog({
   };
 
   const save = useMutation({
-    mutationFn: (payload: unknown) =>
-      editing ? api.patch<BlockDTO>(`/blocks/${draft.id}`, payload) : api.post<BlockDTO>("/blocks", payload),
-    onSuccess: () => done(editing ? "Bloco atualizado." : "Bloco criado."),
-    onError: (e: Error) => setFormError(e instanceof ApiError ? e.message : "Não foi possível salvar."),
+    mutationFn: ({ payload, scope }: { payload: unknown; scope?: BlockScope }) =>
+      editing
+        ? api.patch<BlockDTO>(
+            scope ? `/blocks/${draft.id}?scope=${scope}&date=${draft.occurrenceDate}` : `/blocks/${draft.id}`,
+            payload,
+          )
+        : api.post<BlockDTO>("/blocks", payload),
+    onSuccess: (_, { scope }) =>
+      done(
+        !editing
+          ? "Bloco criado."
+          : scope === "following"
+            ? "Bloco atualizado deste dia em diante."
+            : scope === "single"
+              ? "Bloco atualizado neste dia."
+              : "Bloco atualizado.",
+      ),
+    onError: (e: Error) => {
+      setPendingEdit(null);
+      setFormError(e instanceof ApiError ? e.message : "Não foi possível salvar.");
+    },
   });
 
   const remove = useMutation({
-    mutationFn: (scope?: BlockDeleteScope) =>
+    mutationFn: (scope?: BlockScope) =>
       api.del(scope ? `/blocks/${draft.id}?scope=${scope}&date=${draft.occurrenceDate}` : `/blocks/${draft.id}`),
     onSuccess: (_, scope) =>
       done(scope === "following" ? "Bloco excluído deste dia em diante." : scope === "single" ? "Bloco excluído neste dia." : "Bloco excluído."),
@@ -161,7 +181,17 @@ export function BlockFormDialog({
     }
     setErrors({});
     setFormError(null);
-    save.mutate(parsed.data);
+    // Mudou o horário de um recorrente (sem mexer na repetição): pergunta se vale só para este dia ou os seguintes.
+    const timeChanged = v.startTime !== draft.startTime || v.endTime !== draft.endTime;
+    const sameSeries =
+      v.recurrence === "REPEAT" &&
+      v.date === draft.startsOn &&
+      [...payload.repeatWeekdays].sort().join() === [...(draft.repeatWeekdays ?? [])].sort().join();
+    if (editing && draft.recurrence === "REPEAT" && draft.occurrenceDate && timeChanged && sameSeries) {
+      setPendingEdit(parsed.data);
+      return;
+    }
+    save.mutate({ payload: parsed.data });
   });
 
   const onCategory = (id: string) => {
@@ -176,7 +206,10 @@ export function BlockFormDialog({
         <DialogHeader>
           <DialogTitle>{editing ? "Editar bloco" : "Novo bloco"}</DialogTitle>
           {editing && draft.recurrence === "REPEAT" && (
-            <DialogDescription>Este bloco se repete: as mudanças valem para todos os dias em que ele aparece.</DialogDescription>
+            <DialogDescription>
+              Este bloco se repete: as mudanças valem para todos os dias em que ele aparece. Ao mudar o horário, você
+              escolhe se vale só para este dia ou também para os seguintes.
+            </DialogDescription>
           )}
         </DialogHeader>
 
@@ -314,6 +347,37 @@ export function BlockFormDialog({
             </Button>
           </DialogFooter>
         </form>
+
+        <Dialog open={pendingEdit !== null} onOpenChange={(o) => !o && setPendingEdit(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Alterar horário do bloco recorrente</DialogTitle>
+              <DialogDescription>"{draft.title}" se repete. Onde o novo horário deve valer?</DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                disabled={save.isPending}
+                onClick={() => save.mutate({ payload: pendingEdit, scope: "single" })}
+              >
+                Apenas este ({draft.occurrenceDate && formatShortDate(draft.occurrenceDate)})
+              </Button>
+              <Button
+                variant="outline"
+                disabled={save.isPending}
+                onClick={() => save.mutate({ payload: pendingEdit, scope: "following" })}
+              >
+                Este e todos os seguintes
+              </Button>
+              <Button variant="outline" disabled={save.isPending} onClick={() => save.mutate({ payload: pendingEdit })}>
+                Todos os dias
+              </Button>
+              <Button variant="ghost" disabled={save.isPending} onClick={() => setPendingEdit(null)}>
+                Cancelar
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={askDeleteScope} onOpenChange={setAskDeleteScope}>
           <DialogContent className="sm:max-w-md">

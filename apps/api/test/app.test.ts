@@ -55,6 +55,16 @@ describe("API", () => {
     expect(res.body.error.details.date).toBeDefined();
   });
 
+  it("exige scope e date juntos ao editar parte de um recorrente", async () => {
+    const token = signAccessToken({ sub: "u1", role: "USER" });
+    const res = await request(app)
+      .patch("/api/v1/blocks/x?scope=following")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ startTime: "10:00", endTime: "11:00" });
+    expect(res.status).toBe(400);
+    expect(res.body.error.details.date).toBeDefined();
+  });
+
   it("bloqueia o painel para usuários comuns (RF06.2)", async () => {
     const token = signAccessToken({ sub: "u1", role: "USER" });
     const res = await request(app).get("/api/v1/admin/dashboard").set("Authorization", `Bearer ${token}`);
