@@ -226,8 +226,9 @@ export function BlockFormDialog({
             <Input id="title" autoFocus {...register("title")} />
           </Field>
 
-          {/* Em telas estreitas, Fim desce para a linha de baixo para os campos não se sobreporem. */}
-          <div className="grid gap-3 sm:grid-cols-2">
+          {/* Em telas estreitas, Fim desce para a linha de baixo para os campos não se sobreporem.
+              grid-cols-1 (minmax(0, 1fr)) impede que a largura intrínseca dos campos de hora alargue a coluna. */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Início" htmlFor="startTime" error={errors.startTime}>
               <Input id="startTime" type="time" {...register("startTime")} />
             </Field>

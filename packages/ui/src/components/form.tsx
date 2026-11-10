@@ -6,8 +6,14 @@ import { cn } from "../lib/utils";
 const fieldBase =
   "w-full min-w-0 rounded-lg border border-input bg-card px-3 text-sm pointer-coarse:text-base text-foreground placeholder:text-subtle-foreground transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50 aria-[invalid=true]:border-destructive";
 
+// Campos de data/hora: no WebKit do iOS (Safari e Chrome do iPhone) a aparência nativa impõe uma largura
+// mínima própria e ignora o w-full, estourando o contêiner. Sem ela, o campo respeita a largura do pai;
+// o valor é alinhado à esquerda como nos demais campos.
+const dateTimeFix =
+  "[&:is([type=time],[type=date],[type=datetime-local],[type=month],[type=week])]:appearance-none [&::-webkit-date-and-time-value]:text-left [&::-webkit-date-and-time-value]:min-h-[1.5em]";
+
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, ...props }, ref) => <input ref={ref} className={cn(fieldBase, "h-10", className)} {...props} />,
+  ({ className, ...props }, ref) => <input ref={ref} className={cn(fieldBase, dateTimeFix, "h-10", className)} {...props} />,
 );
 Input.displayName = "Input";
 
