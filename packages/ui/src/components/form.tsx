@@ -2,8 +2,9 @@ import * as React from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { cn } from "../lib/utils";
 
+// Em telas de toque o texto fica em 16px: abaixo disso, o Safari do iPhone dá zoom na página ao focar o campo.
 const fieldBase =
-  "w-full rounded-lg border border-input bg-card px-3 text-sm text-foreground placeholder:text-subtle-foreground transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50 aria-[invalid=true]:border-destructive";
+  "w-full min-w-0 rounded-lg border border-input bg-card px-3 text-sm pointer-coarse:text-base text-foreground placeholder:text-subtle-foreground transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50 aria-[invalid=true]:border-destructive";
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...props }, ref) => <input ref={ref} className={cn(fieldBase, "h-10", className)} {...props} />,
