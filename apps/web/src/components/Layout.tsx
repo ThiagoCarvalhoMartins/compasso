@@ -11,6 +11,7 @@ import {
 } from "@compasso/ui";
 import { useAuth } from "../lib/auth";
 import { useTheme } from "../lib/theme";
+import { ScrollToTop } from "./ScrollToTop";
 
 const links = [
   { to: "/", label: "Compasso", icon: Compass, end: true },
@@ -76,6 +77,8 @@ export function Layout() {
       <main className="mx-auto max-w-6xl px-4 py-6">
         <Outlet />
       </main>
+
+      <ScrollToTop />
 
       {/* Navegação inferior no celular */}
       <nav aria-label="Principal" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
