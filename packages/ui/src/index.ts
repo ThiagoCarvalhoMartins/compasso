@@ -36,3 +36,4 @@ export { Avatar, Badge, Table, TBody, TD, TH, THead, TR, Toaster, toast } from "
 export { Calendar, type CalendarProps } from "./components/calendar";
 export { DatePicker, type DatePickerProps } from "./components/date-picker";
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "./components/popover";
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./components/tooltip";
