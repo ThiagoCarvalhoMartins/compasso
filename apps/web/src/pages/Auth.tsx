@@ -27,7 +27,7 @@ function AuthShell({ title, subtitle, children }: { title: string; subtitle?: Re
         </span>
       </Link>
       <Card className="w-full max-w-md">
-        <CardContent className="flex flex-col gap-5 pt-6">
+        <CardContent className="flex flex-col gap-5 pt-1">
           <div>
             <h1 className="text-3xl">{title}</h1>
             {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}

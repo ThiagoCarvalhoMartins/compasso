@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download } from "lucide-react";
 import { addDays } from "@compasso/shared";
-import { Button, Card, CardContent, DatePicker, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TBody, TD, TH, THead, TR, downloadBlob, toast } from "@compasso/ui";
+import { Button, Card, CardContent, DatePicker, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TBody, TD, TH, THead, TR, cn, downloadBlob, toast } from "@compasso/ui";
 import { AGE_GROUPS, api } from "../lib";
 
 /** O Select do Radix não aceita item com valor vazio; este valor representa a opção "Todas". */
@@ -43,7 +43,7 @@ export function ReportsPage() {
     <div className="flex flex-col gap-5">
       <h1 className="text-3xl">Relatórios</h1>
       <Card>
-        <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
+        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="type">Relatório</Label>
             <Select value={type} onValueChange={(v) => setType(v as ReportType)}>
@@ -93,7 +93,7 @@ export function ReportsPage() {
 
       <p className="text-xs text-muted-foreground">Somente dados agregados — o conteúdo dos blocos dos usuários nunca aparece aqui.</p>
 
-      <Card className={isFetching ? "opacity-70 transition-opacity" : "transition-opacity"}>
+      <Card className={cn("py-0", isFetching ? "opacity-70 transition-opacity" : "transition-opacity")}>
         <Table>
           <THead>
             <TR>

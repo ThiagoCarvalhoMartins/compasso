@@ -25,6 +25,7 @@ import {
   THead,
   TR,
   toast,
+  cn,
 } from "@compasso/ui";
 import { ROLE_LABEL, STATUS_LABEL, api, formatDateTime, useAdmin } from "../lib";
 
@@ -65,7 +66,7 @@ export function UsersPage() {
     <div className="flex flex-col gap-5">
       <h1 className="text-3xl">Usuários</h1>
       <Card>
-        <CardContent className="grid gap-3 pt-5 sm:grid-cols-2 lg:grid-cols-5">
+        <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="flex flex-col gap-1.5 lg:col-span-2">
             <Label htmlFor="q">Buscar</Label>
             <Input id="q" placeholder="Nome ou e-mail" value={filters.q} onChange={set("q")} />
@@ -124,7 +125,7 @@ export function UsersPage() {
         </CardContent>
       </Card>
 
-      <Card className={isFetching ? "opacity-70 transition-opacity" : "transition-opacity"}>
+      <Card className={cn("py-0", isFetching ? "opacity-70 transition-opacity" : "transition-opacity")}>
         <Table>
           <THead>
             <TR>
