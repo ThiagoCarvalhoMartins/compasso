@@ -103,7 +103,7 @@ export function CompassPage() {
 
         {!started && (
           <Card className="border-primary bg-primary/20">
-            <CardContent className="flex flex-col items-start gap-3 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <CardContent className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm">
                 Toque em <strong>Iniciar meu dia</strong> para liberar os alertas sonoros de hoje.
               </p>
@@ -158,7 +158,7 @@ export function CompassPage() {
         {/* RF04.4 */}
         {state.next && (
           <Card>
-            <CardContent className="flex items-center justify-between gap-4 pt-5">
+            <CardContent className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <span className="size-3 rounded-full" style={{ background: state.next.color }} aria-hidden />
                 <div>

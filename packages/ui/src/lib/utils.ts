@@ -1,6 +1,2 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+// Mesmo comportamento de clsx + tailwind-merge; é o que os componentes gerados pelo shadcn CLI importam.
+export { cn } from "cn";

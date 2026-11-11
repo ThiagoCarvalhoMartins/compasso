@@ -21,7 +21,7 @@ interface Dashboard {
 function Stat({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   return (
     <Card>
-      <CardContent className="pt-5">
+      <CardContent>
         <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
         <p className="mt-1 font-serif text-3xl tabular-nums">{value}</p>
         {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}

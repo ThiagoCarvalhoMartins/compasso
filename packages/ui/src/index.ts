@@ -1,7 +1,7 @@
 export { cn } from "./lib/utils";
 export { ApiError, createApiClient, downloadBlob, type ApiClient } from "./lib/api-client";
-export { Button, buttonVariants, type ButtonProps } from "./components/button";
-export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/card";
+export { Button, buttonVariants } from "./components/button";
+export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./components/card";
 export { Field, Input, Label, PasswordInput, Textarea } from "./components/form";
 export {
   Select,

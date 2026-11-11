@@ -34,7 +34,7 @@ export function AuditPage() {
   return (
     <div className="flex flex-col gap-5">
       <h1 className="text-3xl">Auditoria</h1>
-      <Card>
+      <Card className="py-0">
         <Table>
           <THead>
             <TR>

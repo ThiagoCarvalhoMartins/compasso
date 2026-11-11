@@ -3,6 +3,7 @@
  * Caderno bem diagramado: fundo creme, pastéis de baixa saturação, texto grafite.
  * Uso nos apps:  @import "tailwindcss";  @import "@compasso/ui/theme.css";
  */
+@import "tw-animate-css"; /* animações padrão dos componentes shadcn (animate-in, fade-in, zoom-in…) */
 @source "../components";
 
 @custom-variant dark (&:where(.dark, .dark *));
