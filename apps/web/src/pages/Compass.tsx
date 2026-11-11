@@ -117,7 +117,7 @@ export function CompassPage() {
         {/* RF04.3 / RF04.5 */}
         <Card className={endWarning ? "border-accent bg-accent/30" : undefined} aria-live="polite">
           <CardHeader>
-            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            <p className="mb-1.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
               {state.current ? "Agora" : "Tempo livre"}
             </p>
             {state.current ? (
