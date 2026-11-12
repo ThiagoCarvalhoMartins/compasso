@@ -20,6 +20,28 @@ export function unlockAudio(): boolean {
 
 export const isAudioUnlocked = () => ctx !== null && ctx.state === "running";
 
+const GESTURE_EVENTS = ["pointerdown", "keydown", "touchend"] as const;
+
+/**
+ * Depois de um recarregamento não há gesto recente, então o navegador mantém o áudio bloqueado.
+ * Tenta destravar já (alguns navegadores permitem em sites usados com frequência) e, se não der,
+ * destrava no primeiro toque ou tecla em qualquer lugar da página. Retorna a função de limpeza.
+ */
+export function unlockAudioOnFirstGesture(): () => void {
+  try {
+    unlockAudio();
+  } catch {
+    // Sem gesto alguns navegadores recusam criar o contexto; o primeiro gesto tenta de novo.
+  }
+  const onGesture = () => {
+    unlockAudio();
+    if (isAudioUnlocked()) cleanup();
+  };
+  const cleanup = () => GESTURE_EVENTS.forEach((e) => window.removeEventListener(e, onGesture, true));
+  if (!isAudioUnlocked()) GESTURE_EVENTS.forEach((e) => window.addEventListener(e, onGesture, true));
+  return cleanup;
+}
+
 interface Partial {
   ratio: number;
   gain: number;
@@ -80,7 +102,8 @@ function strike(sound: AlertSound, volume: number, at: number, pitch = 1) {
 
 /** Início de bloco: uma batida. Aviso de fim: duas batidas mais graves. */
 export function playAlert(kind: "start" | "end" | "qp", sound: AlertSound, volume: number) {
-  if (!ctx) return;
+  // Com o áudio ainda bloqueado o som ficaria na fila e tocaria atrasado no primeiro gesto.
+  if (!ctx || ctx.state !== "running") return;
   const now = ctx.currentTime + 0.02;
   if (kind === "start") strike(sound, volume, now);
   else if (kind === "end") {

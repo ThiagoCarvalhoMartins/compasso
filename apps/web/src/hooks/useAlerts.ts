@@ -12,7 +12,7 @@ interface Options {
   timezone: string;
   blocks: BlockDTO[];
   settings: SettingsDTO;
-  /** Áudio destravado pelo clique em "Iniciar meu dia". */
+  /** Usuário iniciou o dia e não pausou as notificações. */
   started: boolean;
   /** Silenciado temporariamente até este instante (RF04.10). */
   mutedUntil: number | null;
