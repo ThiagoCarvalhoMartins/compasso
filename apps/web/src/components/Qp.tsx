@@ -150,6 +150,9 @@ export function QpLauncher({ settings, qpToday }: { settings: SettingsDTO; qpTod
             </Select>
           </div>
         )}
+        <Button size="lg" variant="secondary" className="bg-secondary" onClick={begin} disabled={start.isPending}>
+          Iniciar{!adjusting && ` · ${duration} s`}
+        </Button>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="qp-ambient">Som de fundo</Label>
           <Select
@@ -173,9 +176,6 @@ export function QpLauncher({ settings, qpToday }: { settings: SettingsDTO; qpTod
             </SelectContent>
           </Select>
         </div>
-        <Button size="lg" variant="secondary" className="bg-secondary" onClick={begin} disabled={start.isPending}>
-          Iniciar{!adjusting && ` · ${duration} s`}
-        </Button>
         {!adjusting && (
           <Button variant="ghost" onClick={() => setAdjusting(true)}>
             <Settings2 aria-hidden /> Ajustar duração

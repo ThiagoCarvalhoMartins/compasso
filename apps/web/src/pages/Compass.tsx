@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useMutationState, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { BellOff, BellRing, Lightbulb, LightbulbOff, Play, Star } from "lucide-react";
+import { BellOff, BellRing, Lightbulb, LightbulbOff, Pause, Play, Star } from "lucide-react";
 import {
   compassState,
   formatCountdown,
@@ -16,7 +16,8 @@ import { useAlerts } from "../hooks/useAlerts";
 import { useNow } from "../hooks/useNow";
 import { useWakeLock } from "../hooks/useWakeLock";
 import { api } from "../lib/api";
-import { isAudioUnlocked, unlockAudio } from "../lib/audio";
+import { readAlertsPreference, saveAlertsPreference, type AlertsPreference } from "../lib/alertsPreference";
+import { unlockAudio, unlockAudioOnFirstGesture } from "../lib/audio";
 import { formatLongDate, humanDuration, zonedNow } from "../lib/time";
 
 const MUTE_MINUTES = 30;
@@ -37,7 +38,10 @@ export function CompassPage() {
     queryFn: () => api.get<CompassTodayDTO>("/compass/today"),
   });
   const now = useNow();
-  const [started, setStarted] = useState(isAudioUnlocked);
+  // Lembrado entre recarregamentos: o usuário só precisa tocar em "Iniciar meu dia" uma vez.
+  const [alertsPref, setAlertsPref] = useState<AlertsPreference>(readAlertsPreference);
+  const started = alertsPref !== null;
+  const alertsOn = alertsPref === "on";
   const [mutedUntil, setMutedUntil] = useState<number | null>(null);
   const wake = useWakeLock();
 
@@ -49,6 +53,11 @@ export function CompassPage() {
     if (data && local.date !== data.date) void qc.invalidateQueries({ queryKey: ["compass"] });
   }, [data, local.date, qc]);
 
+  // Após recarregar não há gesto recente: o som é destravado no primeiro toque ou tecla na página.
+  useEffect(() => {
+    if (alertsOn) return unlockAudioOnFirstGesture();
+  }, [alertsOn]);
+
   useEffect(() => {
     if (mutedUntil && now >= mutedUntil) setMutedUntil(null);
   }, [mutedUntil, now]);
@@ -59,7 +68,7 @@ export function CompassPage() {
     timezone: tz,
     blocks,
     settings: data?.settings ?? { alertsEnabled: false, alertSound: "sino", alertVolume: 0.7, endAlertMinutes: 5, qpDurationSeconds: null },
-    started,
+    started: alertsOn,
     mutedUntil,
   });
 
@@ -84,13 +93,30 @@ export function CompassPage() {
   const pendingReview = blocks.filter((b) => timeToMinutes(b.endTime) * 60 <= local.secondOfDay && !b.log);
   const muted = mutedUntil !== null;
 
+  const setAlerts = (value: Exclude<AlertsPreference, null>) => {
+    saveAlertsPreference(value);
+    setAlertsPref(value);
+  };
+
   const startDay = async () => {
     unlockAudio();
-    setStarted(true);
+    setAlerts("on");
     if ("Notification" in window && Notification.permission === "default") {
       await Notification.requestPermission().catch(() => undefined);
     }
-    toast.success("Alertas ativados para hoje.");
+    toast.success("Alertas ativados.");
+  };
+
+  const toggleAlertsPaused = () => {
+    if (alertsOn) {
+      setAlerts("paused");
+      setMutedUntil(null);
+      toast("Notificações pausadas.");
+    } else {
+      unlockAudio();
+      setAlerts("on");
+      toast.success("Notificações retomadas.");
+    }
   };
 
   return (
@@ -105,7 +131,7 @@ export function CompassPage() {
           <Card className="border-primary bg-primary/20">
             <CardContent className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm">
-                Toque em <strong>Iniciar meu dia</strong> para liberar os alertas sonoros de hoje.
+                Toque em <strong>Iniciar meu dia</strong> para liberar os alertas sonoros.
               </p>
               <Button size="lg" onClick={startDay}>
                 <Play aria-hidden /> Iniciar meu dia
@@ -190,17 +216,25 @@ export function CompassPage() {
         )}
 
         <div className="flex flex-wrap gap-2">
+          {started && (
+            <Button variant="outline" onClick={toggleAlertsPaused} aria-pressed={!alertsOn}>
+              {alertsOn ? <Pause aria-hidden /> : <Play aria-hidden />}
+              {alertsOn ? "Pausar notificações" : "Retomar notificações"}
+            </Button>
+          )}
           {/* RF04.10 */}
-          <Button
-            variant="outline"
-            onClick={() => setMutedUntil(muted ? null : Date.now() + MUTE_MINUTES * 60_000)}
-            aria-pressed={muted}
-          >
-            {muted ? <BellOff aria-hidden /> : <BellRing aria-hidden />}
-            {muted
-              ? `Silenciado até ${new Date(mutedUntil!).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
-              : `Silenciar ${MUTE_MINUTES} min`}
-          </Button>
+          {alertsOn && (
+            <Button
+              variant="outline"
+              onClick={() => setMutedUntil(muted ? null : Date.now() + MUTE_MINUTES * 60_000)}
+              aria-pressed={muted}
+            >
+              {muted ? <BellOff aria-hidden /> : <BellRing aria-hidden />}
+              {muted
+                ? `Silenciado até ${new Date(mutedUntil!).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                : `Silenciar ${MUTE_MINUTES} min`}
+            </Button>
+          )}
           {wake.supported && (
             <Button variant="outline" onClick={wake.toggle} aria-pressed={wake.active}>
               {wake.active ? <Lightbulb aria-hidden /> : <LightbulbOff aria-hidden />}
