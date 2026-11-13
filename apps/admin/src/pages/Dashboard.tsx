@@ -7,7 +7,7 @@ interface Dashboard {
   users: { total: number; newDay: number; newWeek: number; newMonth: number };
   active: { dau: number; wau: number; mau: number };
   retention: { d1: number | null; d7: number | null; d30: number | null };
-  completion: { planned: number; done: number; rate: number | null };
+  completion: { planned: number; marked: number; done: number; rate: number | null };
   qp: {
     perDay: { date: string; count: number }[];
     averagePerActiveUser: number;
@@ -50,7 +50,7 @@ export function DashboardPage() {
         <Stat label="Usuários" value={data.users.total} hint={`+${data.users.newDay} hoje · +${data.users.newWeek} na semana · +${data.users.newMonth} no mês`} />
         <Stat label="Ativos (DAU / WAU / MAU)" value={`${data.active.dau} / ${data.active.wau} / ${data.active.mau}`} hint="Abriram a tela Compasso" />
         <Stat label="Retenção D1 · D7 · D30" value={`${pct(data.retention.d1)} · ${pct(data.retention.d7)} · ${pct(data.retention.d30)}`} />
-        <Stat label="Taxa de cumprimento" value={pct(data.completion.rate)} hint={`${data.completion.done} de ${data.completion.planned} blocos (30 dias)`} />
+        <Stat label="Taxa de cumprimento" value={pct(data.completion.rate)} hint={`${data.completion.done} de ${data.completion.marked} blocos registrados · ${data.completion.planned} previstos (30 dias)`} />
       </section>
 
       <section aria-label="Repetições QP" className="grid gap-3 lg:grid-cols-[2fr_1fr]">

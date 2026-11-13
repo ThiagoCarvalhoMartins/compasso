@@ -26,6 +26,9 @@ function axisLabel(date: string, index: number, period: Period, count: number) {
 const shortDate = (date: string) => `${date.slice(8, 10)}/${date.slice(5, 7)}`;
 const percent = (part: number, total: number) => (total ? Math.round((part / total) * 100) : 0);
 
+/** Blocos com registro (concluído, parcial ou não realizado) — a base da taxa de conclusão. */
+const markedCount = (d: { done: number; partial: number; skipped: number }) => d.done + d.partial + d.skipped;
+
 /** Abaixo desta taxa de conclusão (%), o Analytics sugere rever os blocos. */
 const LOW_COMPLETION_RATE = 70;
 
@@ -94,10 +97,11 @@ function BlockCompletionCard({ days, period }: { days: BlockSummaryDay[]; period
     }),
     { planned: 0, done: 0, partial: 0, skipped: 0 },
   );
-  const unmarked = totals.planned - totals.done - totals.partial - totals.skipped;
+  const marked = markedCount(totals);
+  const unmarked = totals.planned - marked;
   const max = Math.max(1, ...days.map((d) => d.planned));
-  const completionRate = percent(totals.done, totals.planned);
-  const lowCompletion = totals.planned > 0 && completionRate < LOW_COMPLETION_RATE;
+  const completionRate = percent(totals.done, marked);
+  const lowCompletion = marked > 0 && completionRate < LOW_COMPLETION_RATE;
 
   const selectedSegment = SEGMENTS.find((seg) => seg.key === selected);
 
@@ -116,7 +120,7 @@ function BlockCompletionCard({ days, period }: { days: BlockSummaryDay[]; period
             <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
             <p>
               <span className="font-medium">Taxa de conclusão baixa ({completionRate}%).</span> Menos de{" "}
-              {LOW_COMPLETION_RATE}% dos seus blocos foram concluídos nos últimos {period} dias. Considere ajustar seus
+              {LOW_COMPLETION_RATE}% dos blocos registrados foram concluídos nos últimos {period} dias. Considere ajustar seus
               blocos na{" "}
               <Link to="/agenda" className="font-medium underline underline-offset-2">
                 Agenda
@@ -128,7 +132,7 @@ function BlockCompletionCard({ days, period }: { days: BlockSummaryDay[]; period
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">Taxa de conclusão</p>
-            <p className="mt-1 text-2xl tabular-nums">{completionRate}%</p>
+            <p className="mt-1 text-2xl tabular-nums">{marked ? `${completionRate}%` : "–"}</p>
           </div>
           {SEGMENTS.map((seg) => {
             const active = selected === seg.key;
@@ -224,12 +228,13 @@ function BlockChart({ days, period, max }: { days: BlockSummaryDay[]; period: Pe
     <>
       <ol className="flex h-48 items-end gap-1 sm:gap-2" aria-label="Blocos por dia">
         {days.map((d, i) => {
-          const rate = percent(d.done, d.planned);
-          const unmarkedDay = d.planned - d.done - d.partial - d.skipped;
+          const markedDay = markedCount(d);
+          const rate = percent(d.done, markedDay);
+          const unmarkedDay = d.planned - markedDay;
           return (
             <li key={d.date} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
               {period === 7 && (
-                <span className="text-xs tabular-nums text-muted-foreground">{d.planned ? `${rate}%` : "–"}</span>
+                <span className="text-xs tabular-nums text-muted-foreground">{markedDay ? `${rate}%` : "–"}</span>
               )}
               <div
                 className="flex w-full flex-col-reverse overflow-hidden rounded-t-md transition-[height] duration-300"
