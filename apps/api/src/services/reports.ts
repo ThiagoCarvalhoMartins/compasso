@@ -17,8 +17,9 @@ const today = () => todayIn(PANEL_TZ);
 const utcDay = (d: Date) => todayIn(PANEL_TZ, d);
 
 /**
- * Taxa de cumprimento: blocos concluídos ÷ blocos registrados (concluído, parcial ou não realizado) no
- * período (até ontem). Blocos previstos sem registro ficam fora da base.
+ * Taxa de cumprimento: blocos concluídos ÷ base do dia. Nos dias que já passaram, a base são todos os blocos
+ * previstos (sem registro conta como não concluído); no dia de hoje, ainda em andamento, só os blocos já
+ * registrados (concluído, parcial ou não realizado).
  */
 async function completionRate(from: string, to: string, userIds?: string[]) {
   const where = { user: { status: { not: "DELETED" as const } }, ...(userIds ? { userId: { in: userIds } } : {}) };
@@ -26,10 +27,10 @@ async function completionRate(from: string, to: string, userIds?: string[]) {
     ...toBlockDTO(b),
     userCreated: utcDay(b.user.createdAt),
   }));
-  const perDay = new Map<string, { planned: number; marked: number; done: number }>();
+  const perDay = new Map<string, { planned: number; marked: number; done: number; base: number }>();
   for (const date of dateRange(from, to)) {
     const planned = blocksForDate(blocks, date).filter((b) => b.userCreated <= date).length;
-    perDay.set(date, { planned, marked: 0, done: 0 });
+    perDay.set(date, { planned, marked: 0, done: 0, base: 0 });
   }
   const logs = await prisma.blockLog.groupBy({
     by: ["date", "status"],
@@ -46,6 +47,8 @@ async function completionRate(from: string, to: string, userIds?: string[]) {
     day.marked += row._count;
     if (row.status === "DONE") day.done += row._count;
   }
+  const t0 = today();
+  for (const [date, day] of perDay) day.base = date < t0 ? day.planned : day.marked;
   return perDay;
 }
 
@@ -90,8 +93,8 @@ export async function dashboard() {
   const yesterday = addDays(t0, -1);
   const completion = await completionRate(addDays(t0, -30), yesterday);
   const totals = [...completion.values()].reduce(
-    (acc, d) => ({ planned: acc.planned + d.planned, marked: acc.marked + d.marked, done: acc.done + d.done }),
-    { planned: 0, marked: 0, done: 0 },
+    (acc, d) => ({ planned: acc.planned + d.planned, marked: acc.marked + d.marked, done: acc.done + d.done, base: acc.base + d.base }),
+    { planned: 0, marked: 0, done: 0, base: 0 },
   );
 
   const qpSessions = await prisma.qpSession.findMany({
@@ -123,7 +126,7 @@ export async function dashboard() {
     users: { total, newDay, newWeek, newMonth },
     active: { dau, wau, mau },
     retention,
-    completion: { ...totals, rate: totals.marked ? totals.done / totals.marked : null },
+    completion: { ...totals, rate: totals.base ? totals.done / totals.base : null },
     qp: {
       perDay: qpPerDay,
       averagePerActiveUser: mau ? qpSessions.length / mau : 0,
@@ -180,7 +183,7 @@ export async function buildReport(type: "cadastros" | "engajamento", from: strin
       blocos_previstos: c.planned,
       blocos_registrados: c.marked,
       blocos_concluidos: c.done,
-      cumprimento: c.marked ? `${Math.round((c.done / c.marked) * 100)}%` : "—",
+      cumprimento: c.base ? `${Math.round((c.done / c.base) * 100)}%` : "—",
       repeticoes_qp: qp.filter((s) => utcDay(s.startedAt) === date).length,
     };
   });
