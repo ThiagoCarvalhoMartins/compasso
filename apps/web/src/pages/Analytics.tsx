@@ -72,7 +72,7 @@ export function AnalyticsPage() {
         </div>
       </div>
 
-      <BlockCompletionCard days={blockDays} period={period} />
+      <BlockCompletionCard days={blockDays} period={period} today={to ?? ""} />
       <QpCard days={qpDays} period={period} />
     </div>
   );
@@ -90,7 +90,7 @@ type SegmentKey = (typeof SEGMENTS)[number]["key"];
  * Taxa de conclusão = concluídos ÷ todos os blocos previstos, inclusive no dia de hoje: o que ainda não tem
  * registro conta como não concluído (10 blocos hoje com 1 concluído = 10%).
  */
-function BlockCompletionCard({ days, period }: { days: BlockSummaryDay[]; period: Period }) {
+function BlockCompletionCard({ days, period, today }: { days: BlockSummaryDay[]; period: Period; today: string }) {
   const [selected, setSelected] = useState<SegmentKey | null>(null);
   const totals = days.reduce(
     (s, d) => ({
@@ -104,7 +104,11 @@ function BlockCompletionCard({ days, period }: { days: BlockSummaryDay[]; period
   const unmarked = totals.planned - markedCount(totals);
   const max = Math.max(1, ...days.map((d) => d.planned));
   const completionRate = percent(totals.done, totals.planned);
-  const lowCompletion = totals.planned > 0 && completionRate < LOW_COMPLETION_RATE;
+  // O alerta ignora o dia de hoje, ainda em andamento: no começo do dia a taxa de hoje é naturalmente baixa.
+  const past = days.filter((d) => d.date < today);
+  const pastPlanned = past.reduce((s, d) => s + d.planned, 0);
+  const pastRate = percent(past.reduce((s, d) => s + d.done, 0), pastPlanned);
+  const lowCompletion = pastPlanned > 0 && pastRate < LOW_COMPLETION_RATE;
 
   const selectedSegment = SEGMENTS.find((seg) => seg.key === selected);
 
@@ -122,8 +126,8 @@ function BlockCompletionCard({ days, period }: { days: BlockSummaryDay[]; period
           <div role="alert" className="flex gap-3 rounded-lg bg-destructive/25 p-3 text-sm">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
             <p>
-              <span className="font-medium">Taxa de conclusão baixa ({completionRate}%).</span> Menos de{" "}
-              {LOW_COMPLETION_RATE}% dos seus blocos foram concluídos nos últimos {period} dias. Considere ajustar seus
+              <span className="font-medium">Taxa de conclusão baixa ({pastRate}%).</span> Menos de{" "}
+              {LOW_COMPLETION_RATE}% dos seus blocos foram concluídos nos últimos {period} dias, sem contar hoje. Considere ajustar seus
               blocos na{" "}
               <Link to="/agenda" className="font-medium underline underline-offset-2">
                 Agenda
