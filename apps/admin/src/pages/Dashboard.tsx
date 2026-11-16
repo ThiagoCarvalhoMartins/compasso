@@ -7,7 +7,7 @@ interface Dashboard {
   users: { total: number; newDay: number; newWeek: number; newMonth: number };
   active: { dau: number; wau: number; mau: number };
   retention: { d1: number | null; d7: number | null; d30: number | null };
-  completion: { planned: number; marked: number; done: number; base: number; rate: number | null };
+  completion: { planned: number; marked: number; done: number; rate: number | null };
   qp: {
     perDay: { date: string; count: number }[];
     averagePerActiveUser: number;

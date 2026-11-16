@@ -29,12 +29,6 @@ const percent = (part: number, total: number) => (total ? Math.round((part / tot
 /** Blocos com registro: concluído, parcial ou não realizado. */
 const markedCount = (d: { done: number; partial: number; skipped: number }) => d.done + d.partial + d.skipped;
 
-/**
- * Base da taxa de conclusão de um dia: nos dias que já passaram, todos os blocos previstos (o que ficou sem
- * registro conta como não concluído); no dia de hoje, ainda em andamento, só os blocos já registrados.
- */
-const rateBase = (d: BlockSummaryDay, today: string) => (d.date < today ? d.planned : markedCount(d));
-
 /** Abaixo desta taxa de conclusão (%), o Analytics sugere rever os blocos. */
 const LOW_COMPLETION_RATE = 70;
 
@@ -92,6 +86,10 @@ const SEGMENTS = [
 
 type SegmentKey = (typeof SEGMENTS)[number]["key"];
 
+/**
+ * Taxa de conclusão = concluídos ÷ todos os blocos previstos, inclusive no dia de hoje: o que ainda não tem
+ * registro conta como não concluído (10 blocos hoje com 1 concluído = 10%).
+ */
 function BlockCompletionCard({ days, period, today }: { days: BlockSummaryDay[]; period: Period; today: string }) {
   const [selected, setSelected] = useState<SegmentKey | null>(null);
   const totals = days.reduce(
@@ -104,10 +102,13 @@ function BlockCompletionCard({ days, period, today }: { days: BlockSummaryDay[];
     { planned: 0, done: 0, partial: 0, skipped: 0 },
   );
   const unmarked = totals.planned - markedCount(totals);
-  const base = days.reduce((s, d) => s + rateBase(d, today), 0);
   const max = Math.max(1, ...days.map((d) => d.planned));
-  const completionRate = percent(totals.done, base);
-  const lowCompletion = base > 0 && completionRate < LOW_COMPLETION_RATE;
+  const completionRate = percent(totals.done, totals.planned);
+  // O alerta ignora o dia de hoje, ainda em andamento: no começo do dia a taxa de hoje é naturalmente baixa.
+  const past = days.filter((d) => d.date < today);
+  const pastPlanned = past.reduce((s, d) => s + d.planned, 0);
+  const pastRate = percent(past.reduce((s, d) => s + d.done, 0), pastPlanned);
+  const lowCompletion = pastPlanned > 0 && pastRate < LOW_COMPLETION_RATE;
 
   const selectedSegment = SEGMENTS.find((seg) => seg.key === selected);
 
@@ -125,8 +126,8 @@ function BlockCompletionCard({ days, period, today }: { days: BlockSummaryDay[];
           <div role="alert" className="flex gap-3 rounded-lg bg-destructive/25 p-3 text-sm">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
             <p>
-              <span className="font-medium">Taxa de conclusão baixa ({completionRate}%).</span> Menos de{" "}
-              {LOW_COMPLETION_RATE}% dos seus blocos foram concluídos nos últimos {period} dias. Considere ajustar seus
+              <span className="font-medium">Taxa de conclusão baixa ({pastRate}%).</span> Menos de{" "}
+              {LOW_COMPLETION_RATE}% dos seus blocos foram concluídos nos últimos {period} dias, sem contar hoje. Considere ajustar seus
               blocos na{" "}
               <Link to="/agenda" className="font-medium underline underline-offset-2">
                 Agenda
@@ -138,7 +139,7 @@ function BlockCompletionCard({ days, period, today }: { days: BlockSummaryDay[];
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">Taxa de conclusão</p>
-            <p className="mt-1 text-2xl tabular-nums">{base ? `${completionRate}%` : "–"}</p>
+            <p className="mt-1 text-2xl tabular-nums">{totals.planned ? `${completionRate}%` : "–"}</p>
           </div>
           {SEGMENTS.map((seg) => {
             const active = selected === seg.key;
@@ -183,7 +184,7 @@ function BlockCompletionCard({ days, period, today }: { days: BlockSummaryDay[];
         {selectedSegment ? (
           <BlockList id="block-completion-detail" days={days} segment={selectedSegment} />
         ) : (
-          <BlockChart days={days} period={period} max={max} today={today} />
+          <BlockChart days={days} period={period} max={max} />
         )}
       </CardContent>
     </Card>
@@ -229,18 +230,17 @@ function BlockList({ id, days, segment }: { id: string; days: BlockSummaryDay[];
   );
 }
 
-function BlockChart({ days, period, max, today }: { days: BlockSummaryDay[]; period: Period; max: number; today: string }) {
+function BlockChart({ days, period, max }: { days: BlockSummaryDay[]; period: Period; max: number }) {
   return (
     <>
       <ol className="flex h-48 items-end gap-1 sm:gap-2" aria-label="Blocos por dia">
         {days.map((d, i) => {
-          const baseDay = rateBase(d, today);
-          const rate = percent(d.done, baseDay);
+          const rate = percent(d.done, d.planned);
           const unmarkedDay = d.planned - markedCount(d);
           return (
             <li key={d.date} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
               {period === 7 && (
-                <span className="text-xs tabular-nums text-muted-foreground">{baseDay ? `${rate}%` : "–"}</span>
+                <span className="text-xs tabular-nums text-muted-foreground">{d.planned ? `${rate}%` : "–"}</span>
               )}
               <div
                 className="flex w-full flex-col-reverse overflow-hidden rounded-t-md transition-[height] duration-300"
