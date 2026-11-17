@@ -236,8 +236,21 @@ export function CompassPage() {
             </Button>
           )}
           {wake.supported && (
-            <Button variant="outline" onClick={wake.toggle} aria-pressed={wake.active}>
-              {wake.active ? <Lightbulb aria-hidden /> : <LightbulbOff aria-hidden />}
+            <Button
+              variant="outline"
+              onClick={wake.toggle}
+              aria-pressed={wake.active}
+              className={
+                wake.active
+                  ? "border-amber-300/60 bg-amber-50 hover:bg-amber-100/70 dark:border-amber-500/30 dark:bg-amber-500/10 dark:hover:bg-amber-500/15"
+                  : undefined
+              }
+            >
+              {wake.active ? (
+                <Lightbulb aria-hidden className="text-amber-500 fill-amber-300/40" />
+              ) : (
+                <LightbulbOff aria-hidden />
+              )}
               {wake.active ? "Tela sempre ligada" : "Manter tela ligada"}
             </Button>
           )}
