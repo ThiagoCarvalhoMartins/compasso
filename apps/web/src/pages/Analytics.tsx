@@ -88,7 +88,8 @@ type SegmentKey = (typeof SEGMENTS)[number]["key"];
 
 /**
  * Taxa de conclusão = concluídos ÷ todos os blocos previstos, inclusive no dia de hoje: o que ainda não tem
- * registro conta como não concluído (10 blocos hoje com 1 concluído = 10%).
+ * registro conta como não concluído (10 blocos hoje com 1 concluído = 10%). O alerta de taxa baixa usa só os dias
+ * que já passaram; o card mostra essa taxa logo abaixo, para os dois valores não parecerem contraditórios.
  */
 function BlockCompletionCard({ days, period, today }: { days: BlockSummaryDay[]; period: Period; today: string }) {
   const [selected, setSelected] = useState<SegmentKey | null>(null);
@@ -109,6 +110,8 @@ function BlockCompletionCard({ days, period, today }: { days: BlockSummaryDay[];
   const pastPlanned = past.reduce((s, d) => s + d.planned, 0);
   const pastRate = percent(past.reduce((s, d) => s + d.done, 0), pastPlanned);
   const lowCompletion = pastPlanned > 0 && pastRate < LOW_COMPLETION_RATE;
+  // Mesma base do alerta, exibida no card quando hoje tem blocos previstos e as duas taxas podem divergir.
+  const showPastRate = pastPlanned > 0 && pastPlanned < totals.planned;
 
   const selectedSegment = SEGMENTS.find((seg) => seg.key === selected);
 
@@ -127,7 +130,7 @@ function BlockCompletionCard({ days, period, today }: { days: BlockSummaryDay[];
             <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
             <p>
               <span className="font-medium">Taxa de conclusão baixa ({pastRate}%).</span> Menos de{" "}
-              {LOW_COMPLETION_RATE}% dos seus blocos foram concluídos nos últimos {period} dias, sem contar hoje. Considere ajustar seus
+              {LOW_COMPLETION_RATE}% dos seus blocos foram concluídos nos últimos {period} dias, com exceção de hoje. Considere ajustar seus
               blocos na{" "}
               <Link to="/agenda" className="font-medium underline underline-offset-2">
                 Agenda
@@ -140,6 +143,9 @@ function BlockCompletionCard({ days, period, today }: { days: BlockSummaryDay[];
           <div className="rounded-lg border p-3">
             <p className="text-xs text-muted-foreground">Taxa de conclusão</p>
             <p className="mt-1 text-2xl tabular-nums">{totals.planned ? `${completionRate}%` : "–"}</p>
+            {showPastRate && (
+              <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">{pastRate}% com exceção de hoje</p>
+            )}
           </div>
           {SEGMENTS.map((seg) => {
             const active = selected === seg.key;
