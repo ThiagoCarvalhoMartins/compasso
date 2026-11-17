@@ -12,6 +12,7 @@ import {
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, cn, Progress, Spinner, toast } from "@compasso/ui";
 import { QpLauncher } from "../components/Qp";
 import { Timeline } from "../components/Timeline";
+import { hasStartedThisSession, WelcomeOverlay } from "../components/WelcomeOverlay";
 import { useAlerts } from "../hooks/useAlerts";
 import { useNow } from "../hooks/useNow";
 import { useWakeLock } from "../hooks/useWakeLock";
@@ -44,6 +45,7 @@ export function CompassPage() {
   const alertsOn = alertsPref === "on";
   const [mutedUntil, setMutedUntil] = useState<number | null>(null);
   const wake = useWakeLock();
+  const [welcomed, setWelcomed] = useState(hasStartedThisSession);
 
   const tz = data?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const local = zonedNow(now, tz);
@@ -84,8 +86,36 @@ export function CompassPage() {
     select: (mutation) => mutation.state.variables as MarkBlockVariables,
   });
 
-  if (isLoading) return <p className="text-muted-foreground">Carregando seu dia…</p>;
-  if (error || !data) return <p role="alert">Não foi possível carregar o dia. Tente recarregar a página.</p>;
+  /**
+   * Clique em "Iniciar meu dia" na tela de boas-vindas: destrava o áudio ainda dentro do gesto.
+   * No primeiro uso também ativa os alertas; se o usuário tinha pausado, a pausa é mantida.
+   */
+  const enterApp = () => {
+    unlockAudio();
+    if (alertsPref === null) {
+      saveAlertsPreference("on");
+      setAlertsPref("on");
+    }
+    if (alertsPref !== "paused" && "Notification" in window && Notification.permission === "default") {
+      void Notification.requestPermission().catch(() => undefined);
+    }
+  };
+  const welcome = !welcomed && <WelcomeOverlay onStart={enterApp} onClosed={() => setWelcomed(true)} />;
+
+  if (isLoading)
+    return (
+      <>
+        {welcome}
+        <p className="text-muted-foreground">Carregando seu dia…</p>
+      </>
+    );
+  if (error || !data)
+    return (
+      <>
+        {welcome}
+        <p role="alert">Não foi possível carregar o dia. Tente recarregar a página.</p>
+      </>
+    );
 
   const state = compassState(blocks, local.secondOfDay);
   const endWarning =
@@ -96,15 +126,6 @@ export function CompassPage() {
   const setAlerts = (value: Exclude<AlertsPreference, null>) => {
     saveAlertsPreference(value);
     setAlertsPref(value);
-  };
-
-  const startDay = async () => {
-    unlockAudio();
-    setAlerts("on");
-    if ("Notification" in window && Notification.permission === "default") {
-      await Notification.requestPermission().catch(() => undefined);
-    }
-    toast.success("Alertas ativados.");
   };
 
   const toggleAlertsPaused = () => {
@@ -121,24 +142,12 @@ export function CompassPage() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+      {welcome}
       <div className="flex flex-col gap-5">
         <div>
           <p className="text-sm capitalize text-muted-foreground mb-1.5">{formatLongDate(data.date)}</p>
           <h1 className="text-3xl md:text-4xl">Seu dia em ritmo</h1>
         </div>
-
-        {!started && (
-          <Card className="border-primary bg-primary/20">
-            <CardContent className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm">
-                Toque em <strong>Iniciar meu dia</strong> para liberar os alertas sonoros.
-              </p>
-              <Button size="lg" onClick={startDay}>
-                <Play aria-hidden /> Iniciar meu dia
-              </Button>
-            </CardContent>
-          </Card>
-        )}
 
         {/* RF04.3 / RF04.5 */}
         <Card className={endWarning ? "border-accent bg-accent/30" : undefined} aria-live="polite">
