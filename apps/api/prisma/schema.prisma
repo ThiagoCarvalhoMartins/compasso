@@ -53,6 +53,7 @@ model User {
   blocks        Block[]
   blockLogs     BlockLog[]
   qpSessions    QpSession[]
+  energyChecks  EnergyCheck[]
   refreshTokens RefreshToken[]
   activity      UserActivity[]
   auditActions  AuditLog[]     @relation("AuditAdmin")
@@ -156,6 +157,19 @@ model QpSession {
   @@index([userId, startedAt])
   @@index([startedAt])
   @@map("qp_sessions")
+}
+
+/// Registro de disposição mental (0 a 10) feito ao longo do dia, para mapear os horários de mais energia.
+model EnergyCheck {
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  score      Int      @db.TinyInt
+  recordedAt DateTime @default(now()) @map("recorded_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordedAt])
+  @@map("energy_checks")
 }
 
 model RefreshToken {

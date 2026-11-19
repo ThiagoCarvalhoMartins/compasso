@@ -12,11 +12,14 @@ import {
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, cn, Progress, Spinner, toast } from "@compasso/ui";
 import { QpLauncher } from "../components/Qp";
 import { Timeline } from "../components/Timeline";
+import { EnergyCheckOverlay } from "../components/EnergyCheckOverlay";
 import { hasStartedThisSession, WelcomeOverlay } from "../components/WelcomeOverlay";
 import { useAlerts } from "../hooks/useAlerts";
+import { useEnergyCheck } from "../hooks/useEnergyCheck";
 import { useNow } from "../hooks/useNow";
 import { useWakeLock } from "../hooks/useWakeLock";
 import { api } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { readAlertsPreference, saveAlertsPreference, type AlertsPreference } from "../lib/alertsPreference";
 import { unlockAudio, unlockAudioOnFirstGesture } from "../lib/audio";
 import { formatLongDate, humanDuration, zonedNow } from "../lib/time";
@@ -46,6 +49,10 @@ export function CompassPage() {
   const [mutedUntil, setMutedUntil] = useState<number | null>(null);
   const wake = useWakeLock();
   const [welcomed, setWelcomed] = useState(hasStartedThisSession);
+  const { user } = useAuth();
+  const [qpActive, setQpActive] = useState(false);
+  // O registro de energia nunca aparece por cima da tela de boas-vindas nem da sessão QP.
+  const energy = useEnergyCheck(user?.id, welcomed && !qpActive);
 
   const tz = data?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const local = zonedNow(now, tz);
@@ -100,7 +107,11 @@ export function CompassPage() {
       void Notification.requestPermission().catch(() => undefined);
     }
   };
-  const welcome = !welcomed && <WelcomeOverlay onStart={enterApp} onClosed={() => setWelcomed(true)} />;
+  const welcome = !welcomed ? (
+    <WelcomeOverlay onStart={enterApp} onClosed={() => setWelcomed(true)} />
+  ) : (
+    energy.open && <EnergyCheckOverlay onClosed={energy.finish} />
+  );
 
   if (isLoading)
     return (
@@ -309,7 +320,7 @@ export function CompassPage() {
           </Card>
         )}
 
-        <QpLauncher settings={data.settings} qpToday={data.qpToday} />
+        <QpLauncher settings={data.settings} qpToday={data.qpToday} onSessionChange={setQpActive} />
       </div>
 
       <aside className="flex flex-col gap-3">

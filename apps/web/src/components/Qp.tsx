@@ -76,7 +76,16 @@ function saveAmbient(sound: AmbientSound | null) {
  * RF05.1–RF05.3: na primeira vez pede a duração (dropdown com 15 s); depois, Iniciar começa na hora.
  * "Ajustar duração" reabre o dropdown.
  */
-export function QpLauncher({ settings, qpToday }: { settings: SettingsDTO; qpToday?: number }) {
+export function QpLauncher({
+  settings,
+  qpToday,
+  onSessionChange,
+}: {
+  settings: SettingsDTO;
+  qpToday?: number;
+  /** Avisa quando a sessão em tela cheia abre ou fecha (o registro de energia espera ela terminar). */
+  onSessionChange?: (active: boolean) => void;
+}) {
   const saved = settings.qpDurationSeconds;
   const [adjusting, setAdjusting] = useState(saved === null);
   const [duration, setDuration] = useState<QpDuration>(saved ?? QP_DEFAULT_DURATION);
@@ -88,6 +97,11 @@ export function QpLauncher({ settings, qpToday }: { settings: SettingsDTO; qpTod
   useEffect(() => {
     if (saved !== null) setDuration(saved);
   }, [saved]);
+
+  const active = session !== null;
+  useEffect(() => {
+    onSessionChange?.(active);
+  }, [active, onSessionChange]);
 
   const start = useMutation({
     mutationFn: (plannedSeconds: number) => api.post<{ id: string; plannedSeconds: number }>("/qp-sessions", { plannedSeconds }),

@@ -2,7 +2,7 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import { signAccessToken } from "../src/lib/tokens";
-import { dayBoundsUtc, todayIn } from "../src/lib/time";
+import { dayBoundsUtc, hourIn, todayIn } from "../src/lib/time";
 
 // Testes que não precisam de banco: validação de entrada, autenticação e autorização.
 const app = createApp();
@@ -81,6 +81,21 @@ describe("API", () => {
   });
 });
 
+describe("registro de energia", () => {
+  it("aceita apenas notas inteiras de 0 a 10", async () => {
+    const token = signAccessToken({ sub: "u1", role: "USER" });
+    for (const score of [-1, 11, 7.5, "8"]) {
+      const res = await request(app).post("/api/v1/energy-checks").set("Authorization", `Bearer ${token}`).send({ score });
+      expect(res.status).toBe(400);
+    }
+  });
+
+  it("exige JWT", async () => {
+    const res = await request(app).get("/api/v1/energy-checks/summary?from=2026-11-01&to=2026-11-07");
+    expect(res.status).toBe(401);
+  });
+});
+
 describe("fuso horário (RN09/RN12)", () => {
   it("calcula o dia local e seus limites em UTC", () => {
     const instant = new Date("2026-11-03T02:30:00Z"); // 23:30 de 02/11 em São Paulo (UTC-3)
@@ -88,5 +103,10 @@ describe("fuso horário (RN09/RN12)", () => {
     const { start, end } = dayBoundsUtc("2026-11-02", "America/Sao_Paulo");
     expect(start.toISOString()).toBe("2026-11-02T03:00:00.000Z");
     expect(end.toISOString()).toBe("2026-11-03T03:00:00.000Z");
+  });
+
+  it("calcula a hora local para o gráfico de energia", () => {
+    expect(hourIn("America/Sao_Paulo", new Date("2026-11-03T02:30:00Z"))).toBe(23);
+    expect(hourIn("America/Sao_Paulo", new Date("2026-11-03T03:05:00Z"))).toBe(0);
   });
 });

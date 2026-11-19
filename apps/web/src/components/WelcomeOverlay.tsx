@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useRef, useState } from "react";
 import { Play } from "lucide-react";
-import { Button, cn } from "@compasso/ui";
+import { Button } from "@compasso/ui";
 import { useAuth } from "../lib/auth";
+import { GlassOverlay } from "./GlassOverlay";
 
-/** Duração do fade-out ao entrar no app; a classe `duration-500` abaixo usa o mesmo valor. */
-const EXIT_MS = 500;
 const welcomedKey = (userId: string) => `compasso:welcomed:${userId}`;
 
 /**
@@ -42,38 +40,6 @@ export function WelcomeOverlay({ onStart, onClosed }: { onStart: () => void; onC
   const firstName = user?.name.trim().split(/\s+/)[0];
   const [leaving, setLeaving] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const closed = useRef(false);
-  const onClosedRef = useRef(onClosed);
-  onClosedRef.current = onClosed;
-
-  // Enquanto a tela está ativa, o app ao fundo não recebe foco, cliques nem rolagem.
-  useEffect(() => {
-    if (leaving) return;
-    const root = document.getElementById("root");
-    const html = document.documentElement;
-    const previousOverflow = html.style.overflow;
-    root?.setAttribute("inert", "");
-    html.style.overflow = "hidden";
-    buttonRef.current?.focus();
-    return () => {
-      root?.removeAttribute("inert");
-      html.style.overflow = previousOverflow;
-    };
-  }, [leaving]);
-
-  const close = () => {
-    if (closed.current) return;
-    closed.current = true;
-    onClosedRef.current();
-  };
-
-  // Garantia caso o navegador não dispare o fim da animação. Sem dependências além de `leaving`:
-  // a página ao fundo renderiza a cada segundo e não pode reiniciar este prazo.
-  useEffect(() => {
-    if (!leaving) return;
-    const timer = window.setTimeout(close, EXIT_MS + 150);
-    return () => window.clearTimeout(timer);
-  }, [leaving]);
 
   const start = () => {
     if (leaving) return;
@@ -88,19 +54,13 @@ export function WelcomeOverlay({ onStart, onClosed }: { onStart: () => void; onC
     ? "Cada novo dia é uma oportunidade de avançar. Vamos continuar no seu ritmo?"
     : "Organize seu tempo, mantenha o ritmo e avance em direção às suas metas.";
 
-  return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="welcome-title"
-      aria-describedby="welcome-message"
-      onAnimationEnd={(e) => {
-        if (leaving && e.target === e.currentTarget) close();
-      }}
-      className={cn(
-        "fixed inset-0 z-[60] flex h-dvh w-screen items-center justify-center bg-background/55 px-6 backdrop-blur-md duration-500",
-        leaving ? "pointer-events-none animate-out fade-out fill-mode-forwards" : "animate-in fade-in",
-      )}
+  return (
+    <GlassOverlay
+      leaving={leaving}
+      onClosed={onClosed}
+      initialFocus={buttonRef}
+      labelledBy="welcome-title"
+      describedBy="welcome-message"
     >
       <div className="flex max-w-md flex-col items-center gap-6 text-center animate-in fade-in slide-in-from-bottom-3 duration-700">
         <img src="/icon.svg" alt="" className="size-12" />
@@ -121,7 +81,6 @@ export function WelcomeOverlay({ onStart, onClosed }: { onStart: () => void; onC
           <Play aria-hidden className="fill-current" /> Iniciar meu dia
         </Button>
       </div>
-    </div>,
-    document.body,
+    </GlassOverlay>
   );
 }

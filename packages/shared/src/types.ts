@@ -72,6 +72,13 @@ export interface QpSummaryDay {
   incomplete: number;
 }
 
+/** Média das notas de energia numa hora do dia (0–23, no fuso do usuário); null quando não há registro. */
+export interface EnergyHour {
+  hour: number;
+  average: number | null;
+  count: number;
+}
+
 /** Bloco marcado num dia do resumo do Analytics. */
 export interface BlockSummaryEntry {
   blockId: string;

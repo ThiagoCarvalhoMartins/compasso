@@ -143,6 +143,9 @@ export const qpStartSchema = z.object({
 });
 export const qpEndSchema = z.object({ actualSeconds: z.number().int().min(0).max(3600) });
 
+/** Registro de energia: nota de 0 a 10 para a disposição de começar algo que exige foco. */
+export const energyCheckSchema = z.object({ score: z.number().int().min(0).max(10) });
+
 export const rangeQuerySchema = z.object({ from: dateSchema, to: dateSchema });
 
 // ---------- Admin ----------

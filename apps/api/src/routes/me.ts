@@ -39,13 +39,14 @@ meRouter.patch("/", async (req, res) => {
 // RF02.4 / RNF07 — exportação dos próprios dados (LGPD)
 meRouter.get("/export", async (req, res) => {
   const id = userId(req);
-  const [user, settings, blocks, logs, qp, categories] = await Promise.all([
+  const [user, settings, blocks, logs, qp, categories, energy] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id } }),
     getSettings(id),
     prisma.block.findMany({ where: { userId: id } }),
     prisma.blockLog.findMany({ where: { userId: id } }),
     prisma.qpSession.findMany({ where: { userId: id } }),
     prisma.category.findMany({ where: { userId: id } }),
+    prisma.energyCheck.findMany({ where: { userId: id }, orderBy: { recordedAt: "asc" } }),
   ]);
   res.setHeader("Content-Disposition", 'attachment; filename="compasso-meus-dados.json"');
   res.json({
@@ -56,6 +57,7 @@ meRouter.get("/export", async (req, res) => {
     blocks: blocks.map(toBlockDTO),
     blockLogs: logs.map((l) => ({ blockId: l.blockId, date: fromDbDate(l.date), status: l.status, notedAt: l.notedAt })),
     qpSessions: qp.map(({ userId: _u, ...s }) => s),
+    energyChecks: energy.map((e) => ({ score: e.score, recordedAt: e.recordedAt })),
   });
 });
 

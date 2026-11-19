@@ -13,6 +13,7 @@ import { adminRouter } from "./routes/admin";
 import { authRouter } from "./routes/auth";
 import { blocksRouter, categoriesRouter } from "./routes/blocks";
 import { compassRouter } from "./routes/compass";
+import { energyRouter } from "./routes/energy";
 import { meRouter } from "./routes/me";
 import { qpRouter } from "./routes/qp";
 
@@ -44,6 +45,7 @@ export function createApp() {
   v1.use("/blocks", requireAuth, blocksRouter);
   v1.use("/compass", requireAuth, compassRouter);
   v1.use("/qp-sessions", requireAuth, qpRouter);
+  v1.use("/energy-checks", requireAuth, energyRouter);
   app.use("/api/v1", v1);
 
   app.use(notFoundHandler);

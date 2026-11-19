@@ -8,6 +8,7 @@ import {
   type BlockLogStatus,
   type BlockSummaryDay,
   type CompassTodayDTO,
+  type EnergyHour,
   type QpSummaryDay,
 } from "@compasso/shared";
 import { Button, Card, CardContent, CardHeader, CardTitle, cn } from "@compasso/ui";
@@ -50,12 +51,18 @@ export function AnalyticsPage() {
     enabled: !!to,
   });
 
+  const { data: energyHours = [] } = useQuery({
+    queryKey: ["energy-summary", from, to],
+    queryFn: () => api.get<EnergyHour[]>(`/energy-checks/summary?from=${from}&to=${to}`),
+    enabled: !!to,
+  });
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl md:text-4xl">Analytics</h1>
-          <p className="mt-1 text-muted-foreground">Como seus dias têm saído do plano e quantas Repetições QP você fez.</p>
+          <p className="mt-1 text-muted-foreground">Como seus dias têm saído do plano, quantas Repetições QP você fez e em que horários sua energia é maior.</p>
         </div>
         <div role="group" aria-label="Período" className="flex gap-1 rounded-lg border bg-card p-1">
           {PERIODS.map((p) => (
@@ -74,6 +81,7 @@ export function AnalyticsPage() {
 
       <BlockCompletionCard days={blockDays} period={period} today={to ?? ""} />
       <QpCard days={qpDays} period={period} />
+      <EnergyCard hours={energyHours} period={period} />
     </div>
   );
 }
@@ -317,6 +325,79 @@ function QpCard({ days, period }: { days: QpSummaryDay[]; period: Period }) {
             </li>
           ))}
         </ol>
+      </CardContent>
+    </Card>
+  );
+}
+
+const hourLabel = (hour: number) => `${hour}h`;
+const decimal = (value: number) => value.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** Média das notas de energia (0 a 10) em cada hora do dia, somando todos os dias do período. */
+function EnergyCard({ hours, period }: { hours: EnergyHour[]; period: Period }) {
+  const total = hours.reduce((s, h) => s + h.count, 0);
+  const rated = hours.filter((h): h is EnergyHour & { average: number } => h.average !== null);
+  const peak = rated.reduce<(typeof rated)[number] | null>((best, h) => (!best || h.average > best.average ? h : best), null);
+  const low = rated.reduce<(typeof rated)[number] | null>((worst, h) => (!worst || h.average < worst.average ? h : worst), null);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Nível de energia ao longo do dia</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          {total} {total === 1 ? "registro" : "registros"} nos últimos {period} dias · média de 0 a 10 por hora
+        </p>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-6">
+        {total === 0 ? (
+          <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            Nenhum registro ainda. Ao longo do dia, a tela Compasso pergunta de tempos em tempos como está sua
+            energia; com as respostas, este gráfico mostra seus melhores horários para foco.
+          </p>
+        ) : (
+          <>
+            {peak && low && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Maior energia</p>
+                  <p className="mt-1 text-2xl tabular-nums">{hourLabel(peak.hour)}</p>
+                  <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">média {decimal(peak.average)}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">Menor energia</p>
+                  <p className="mt-1 text-2xl tabular-nums">{hourLabel(low.hour)}</p>
+                  <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">média {decimal(low.average)}</p>
+                </div>
+              </div>
+            )}
+            <ol className="flex h-44 items-end gap-0.5 sm:gap-1" aria-label="Energia média por hora do dia">
+              {hours.map((h) => (
+                <li key={h.hour} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
+                  {h.average !== null ? (
+                    <div
+                      className={cn(
+                        "w-full rounded-t-md transition-[height] duration-300",
+                        h.hour === peak?.hour ? "bg-primary-strong" : "bg-primary",
+                      )}
+                      style={{ height: `${(h.average / 10) * 128}px`, minHeight: 4 }}
+                      title={`${hourLabel(h.hour)}: média ${decimal(h.average)} em ${h.count} ${h.count === 1 ? "registro" : "registros"}`}
+                      aria-hidden
+                    />
+                  ) : (
+                    <div className="h-1 w-full rounded-t-md bg-muted" aria-hidden />
+                  )}
+                  <span className="h-4 text-xs text-muted-foreground" aria-hidden>
+                    {h.hour % 3 === 0 ? h.hour : ""}
+                  </span>
+                  <span className="sr-only">
+                    {hourLabel(h.hour)}:{" "}
+                    {h.average !== null ? `média ${decimal(h.average)} em ${h.count} registros` : "sem registro"}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </>
+        )}
       </CardContent>
     </Card>
   );
