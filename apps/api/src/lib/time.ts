@@ -38,3 +38,9 @@ export function dayBoundsUtc(date: string, tz: string): { start: Date; end: Date
   const end = new Date(nextGuess.getTime() - offset(nextGuess));
   return { start, end };
 }
+
+/** Hora local (0–23) de um instante no fuso do usuário. */
+export function hourIn(tz: string, at: Date): number {
+  const hour = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", hourCycle: "h23" }).format(at);
+  return Number(hour) % 24;
+}
