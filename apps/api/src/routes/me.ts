@@ -55,7 +55,13 @@ meRouter.get("/export", async (req, res) => {
     settings: toSettingsDTO(settings),
     categories,
     blocks: blocks.map(toBlockDTO),
-    blockLogs: logs.map((l) => ({ blockId: l.blockId, date: fromDbDate(l.date), status: l.status, notedAt: l.notedAt })),
+    blockLogs: logs.map((l) => ({
+      blockId: l.blockId,
+      date: fromDbDate(l.date),
+      status: l.status,
+      viaMinimum: l.viaMinimum,
+      notedAt: l.notedAt,
+    })),
     qpSessions: qp.map(({ userId: _u, ...s }) => s),
     energyChecks: energy.map((e) => ({ score: e.score, recordedAt: e.recordedAt })),
   });

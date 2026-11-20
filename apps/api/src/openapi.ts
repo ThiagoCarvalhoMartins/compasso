@@ -32,7 +32,7 @@ const routes: Route[] = [
   ["patch", "/qp-sessions/{id}", "Encerra a sessão com o tempo realizado", "Repetições QP"],
   ["get", "/qp-sessions/summary", "Repetições QP por dia (?from=&to=)", "Analytics"],
   ["post", "/energy-checks", "Registra a nota de energia (0 a 10)", "Energia"],
-  ["get", "/energy-checks/last", "Instante do último registro de energia", "Energia"],
+  ["get", "/energy-checks/last", "Instante e nota do último registro de energia", "Energia"],
   ["get", "/energy-checks/summary", "Média de energia por hora do dia (?from=&to=)", "Analytics"],
   ["post", "/admin/auth/login", "Login de administradores", "Admin", "none"],
   ["post", "/admin/auth/refresh", "Renova o access token do painel", "Admin", "none"],

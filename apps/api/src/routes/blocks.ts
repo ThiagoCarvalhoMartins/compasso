@@ -25,12 +25,16 @@ import {
   assertBlockAllowed,
   assertCategory,
   listUserBlocks,
+  listUserBlocksWithCreation,
   normalizeBlock,
   toBlockData,
 } from "../services/blocks";
 
 export const categoriesRouter = Router();
 export const blocksRouter = Router();
+
+/** Dias antes do período buscados para saber se a primeira ocorrência foi uma retomada. */
+const RETURN_LOOKBACK_DAYS = 31;
 
 const userTimezone = async (id: string) =>
   (await prisma.user.findUniqueOrThrow({ where: { id }, select: { timezone: true } })).timezone;
@@ -68,14 +72,18 @@ blocksRouter.get("/summary", async (req, res) => {
   const days = dateRange(from, to);
   if (days.length > 92) throw badRequest("Período máximo de 92 dias.");
 
-  const [blocks, logs] = await Promise.all([
-    listUserBlocks(id),
+  // Os registros começam um pouco antes do período: a retomada do primeiro dia depende da ocorrência anterior.
+  const logsFrom = addDays(from, -RETURN_LOOKBACK_DAYS);
+  const [{ blocks, createdOn }, logs] = await Promise.all([
+    listUserBlocksWithCreation(id, await userTimezone(id)),
     prisma.blockLog.findMany({
-      where: { userId: id, date: { gte: toDbDate(from), lte: toDbDate(to) } },
-      select: { blockId: true, date: true, status: true },
+      where: { userId: id, date: { gte: toDbDate(logsFrom), lte: toDbDate(to) } },
+      select: { blockId: true, date: true, status: true, viaMinimum: true },
     }),
   ]);
-  res.json(summarizeBlockDays(blocks, logs.map((l) => ({ ...l, date: fromDbDate(l.date) })), days));
+  res.json(
+    summarizeBlockDays(blocks, logs.map((l) => ({ ...l, date: fromDbDate(l.date) })), days, { createdOn, logsFrom }),
+  );
 });
 
 // RF03.1 / RF03.2
@@ -220,13 +228,13 @@ blocksRouter.post("/copy-day", async (req, res) => {
 blocksRouter.put("/:id/logs/:date", async (req, res) => {
   const id = userId(req);
   const date = parse(dateSchema, req.params.date);
-  const { status } = parse(blockLogSchema, req.body);
+  const { status, viaMinimum } = parse(blockLogSchema, req.body);
   const block = await prisma.block.findFirst({ where: { id: req.params.id, userId: id } });
   if (!block) throw notFound();
   const log = await prisma.blockLog.upsert({
     where: { blockId_date: { blockId: block.id, date: toDbDate(date) } },
-    update: { status, notedAt: new Date() },
-    create: { blockId: block.id, userId: id, date: toDbDate(date), status },
+    update: { status, viaMinimum: status === "PARTIAL" && viaMinimum, notedAt: new Date() },
+    create: { blockId: block.id, userId: id, date: toDbDate(date), status, viaMinimum: status === "PARTIAL" && viaMinimum },
   });
-  res.json({ blockId: log.blockId, date, status: log.status });
+  res.json({ blockId: log.blockId, date, status: log.status, viaMinimum: log.viaMinimum });
 });

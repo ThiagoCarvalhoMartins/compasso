@@ -52,7 +52,7 @@ export function useEnergyCheck(userId: string | undefined, enabled: boolean) {
   // Último registro no servidor: respeita o intervalo também quando a resposta veio de outro aparelho.
   const { data: last, isSuccess } = useQuery({
     queryKey: ["energy-last", userId],
-    queryFn: () => api.get<{ recordedAt: string | null }>("/energy-checks/last"),
+    queryFn: () => api.get<{ recordedAt: string | null; score: number | null }>("/energy-checks/last"),
     enabled: !!userId,
   });
 
@@ -107,5 +107,5 @@ export function useEnergyCheck(userId: string | undefined, enabled: boolean) {
   );
 
   const lastAt = last?.recordedAt ? new Date(last.recordedAt).getTime() : null;
-  return { open, mode, lastAt, openManual, finish };
+  return { open, mode, lastAt, lastScore: last?.score ?? null, openManual, finish };
 }

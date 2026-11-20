@@ -50,6 +50,7 @@ interface FormValues {
   repeatMode: "all" | "some";
   repeatWeekdays: number[];
   isOneThing: boolean;
+  minimumVersion: string;
 }
 
 export type BlockDraft = Partial<BlockDTO> & {
@@ -70,6 +71,7 @@ const toForm = (draft: BlockDraft, defaultDate: string): FormValues => ({
   repeatMode: draft.repeatWeekdays && draft.repeatWeekdays.length < 7 ? "some" : "all",
   repeatWeekdays: draft.repeatWeekdays?.length ? draft.repeatWeekdays : [1, 2, 3, 4, 5],
   isOneThing: draft.isOneThing ?? false,
+  minimumVersion: draft.minimumVersion ?? "",
 });
 
 /** RF03.1–RF03.3, RF03.6 — criar, editar, duplicar e excluir blocos. */
@@ -175,6 +177,7 @@ export function BlockFormDialog({
       startTime: v.startTime,
       endTime: v.endTime,
       isOneThing: v.isOneThing,
+      minimumVersion: v.minimumVersion.trim() || null,
     };
     // Mesmo schema Zod da API: erros aparecem antes de enviar.
     const parsed = blockInputSchema.safeParse(payload);
@@ -353,6 +356,20 @@ export function BlockFormDialog({
 
           <Field label="Descrição (opcional)" htmlFor="description">
             <Textarea id="description" rows={2} {...register("description")} />
+          </Field>
+
+          <Field
+            label="Versão de 2 minutos (opcional)"
+            htmlFor="minimumVersion"
+            error={errors.minimumVersion}
+            hint="O mínimo que já conta como não ter desistido. Nos dias difíceis, o app sugere começar por ela."
+          >
+            <Input
+              id="minimumVersion"
+              maxLength={120}
+              placeholder="Ex.: ler 1 página, calçar o tênis"
+              {...register("minimumVersion")}
+            />
           </Field>
 
           <label className="flex items-start gap-2 rounded-lg bg-accent/40 p-3 text-sm">

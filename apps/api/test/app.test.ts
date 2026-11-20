@@ -48,6 +48,24 @@ describe("API", () => {
     expect(res.body.error.details.endTime).toBeDefined();
   });
 
+  it("limita a versão de 2 minutos a 120 caracteres", async () => {
+    const token = signAccessToken({ sub: "u1", role: "USER" });
+    const res = await request(app)
+      .post("/api/v1/blocks")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "Leitura",
+        color: "#B9D3E3",
+        recurrence: "ONCE",
+        date: "2099-01-01",
+        startTime: "08:00",
+        endTime: "09:00",
+        minimumVersion: "x".repeat(121),
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.error.details.minimumVersion).toBeDefined();
+  });
+
   it("exige scope e date juntos ao excluir parte de um recorrente", async () => {
     const token = signAccessToken({ sub: "u1", role: "USER" });
     const res = await request(app).delete("/api/v1/blocks/x?scope=single").set("Authorization", `Bearer ${token}`);
