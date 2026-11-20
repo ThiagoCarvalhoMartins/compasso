@@ -36,12 +36,17 @@ function saveNext(userId: string, at: number) {
 /** Próximo horário possível: no mínimo 2 horas depois de `from`, num ponto sorteado da janela seguinte. */
 const drawAfter = (from: number) => from + MIN_GAP_MS + Math.random() * RANDOM_WINDOW_MS;
 
+/** "auto": pergunta sorteada; "manual": o usuário pediu pelo card. */
+export type EnergyCheckMode = "auto" | "manual";
+
 /**
  * Agenda o registro de energia em momentos aleatórios, com pelo menos 2 horas entre uma pergunta e outra.
- * Só abre com a página visível e `enabled` (fora da tela de boas-vindas e da sessão QP).
+ * Só abre com a página visível e `enabled` (fora da tela de boas-vindas e da sessão QP). O usuário também
+ * pode abrir na hora (`openManual`); um registro manual reinicia o sorteio a partir do momento em que foi feito.
  */
 export function useEnergyCheck(userId: string | undefined, enabled: boolean) {
-  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<EnergyCheckMode | null>(null);
+  const open = mode !== null;
   const [nextAt, setNextAt] = useState<number | null>(() => (userId ? readNext(userId) : null));
 
   // Último registro no servidor: respeita o intervalo também quando a resposta veio de outro aparelho.
@@ -75,7 +80,7 @@ export function useEnergyCheck(userId: string | undefined, enabled: boolean) {
       if (document.visibilityState !== "visible" || Date.now() < nextAt) return;
       // Pulou a vez: sorteia de novo a partir de agora, mantendo as 2 horas de intervalo.
       if (Math.random() < SKIP_CHANCE) schedule(drawAfter(Date.now()));
-      else setOpen(true);
+      else setMode("auto");
     };
     check();
     const timer = window.setInterval(check, CHECK_EVERY_MS);
@@ -86,11 +91,21 @@ export function useEnergyCheck(userId: string | undefined, enabled: boolean) {
     };
   }, [enabled, open, nextAt, schedule]);
 
-  /** Fecha a pergunta (respondida ou adiada) e sorteia a próxima a partir de agora. */
-  const finish = useCallback(() => {
-    setOpen(false);
-    schedule(drawAfter(Date.now()));
-  }, [schedule]);
+  /** Abre o registro a pedido do usuário, sem esperar o horário sorteado. */
+  const openManual = useCallback(() => setMode((current) => current ?? "manual"), []);
 
-  return { open, finish };
+  /**
+   * Fecha a pergunta. A sorteada, respondida ou adiada, sorteia a próxima a partir de agora; a manual só
+   * mexe no sorteio quando foi registrada (desistir dela mantém o horário que já estava marcado).
+   */
+  const finish = useCallback(
+    (recorded: boolean) => {
+      if (mode === "auto" || recorded) schedule(drawAfter(Date.now()));
+      setMode(null);
+    },
+    [mode, schedule],
+  );
+
+  const lastAt = last?.recordedAt ? new Date(last.recordedAt).getTime() : null;
+  return { open, mode, lastAt, openManual, finish };
 }

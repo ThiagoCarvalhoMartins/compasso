@@ -44,3 +44,7 @@ export function hourIn(tz: string, at: Date): number {
   const hour = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "numeric", hourCycle: "h23" }).format(at);
   return Number(hour) % 24;
 }
+
+/** Se dois instantes caem na mesma hora cheia (mesma data e mesma hora) no fuso do usuário. */
+export const sameLocalHour = (tz: string, a: Date, b: Date) =>
+  todayIn(tz, a) === todayIn(tz, b) && hourIn(tz, a) === hourIn(tz, b);

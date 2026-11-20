@@ -2,24 +2,24 @@ import { Router } from "express";
 import { dateRange, energyCheckSchema, rangeQuerySchema, type EnergyHour } from "@compasso/shared";
 import { badRequest, parse } from "../lib/http";
 import { prisma } from "../lib/prisma";
-import { dayBoundsUtc, hourIn } from "../lib/time";
+import { dayBoundsUtc, hourIn, sameLocalHour } from "../lib/time";
 import { userId } from "../middleware/auth";
 
 export const energyRouter = Router();
 
-/** Intervalo mínimo entre dois registros: o questionário aparece no máximo uma vez a cada 2 horas. */
-const MIN_GAP_MS = 2 * 60 * 60 * 1000;
-
-// Registra a nota de energia (0 a 10) no instante da resposta.
+// Registra a nota de energia (0 a 10) no instante da resposta, no máximo uma por hora cheia do fuso do usuário.
+// O sorteio do app já espaça as perguntas em 2 horas; aqui só se barra o registro manual repetido na mesma hora
+// (e duas abas ou dois aparelhos respondendo ao mesmo tempo).
 energyRouter.post("/", async (req, res) => {
   const id = userId(req);
   const { score } = parse(energyCheckSchema, req.body);
-  // Evita registros duplicados (duas abas ou dois aparelhos respondendo ao mesmo tempo).
-  const recent = await prisma.energyCheck.findFirst({
-    where: { userId: id, recordedAt: { gt: new Date(Date.now() - MIN_GAP_MS) } },
-    select: { id: true },
-  });
-  if (recent) throw badRequest("Você já registrou sua energia nas últimas 2 horas.");
+  const [user, last] = await Promise.all([
+    prisma.user.findUniqueOrThrow({ where: { id }, select: { timezone: true } }),
+    prisma.energyCheck.findFirst({ where: { userId: id }, orderBy: { recordedAt: "desc" }, select: { recordedAt: true } }),
+  ]);
+  if (last && sameLocalHour(user.timezone, last.recordedAt, new Date())) {
+    throw badRequest("Você já registrou sua energia nesta hora. Tente de novo na próxima.");
+  }
   const check = await prisma.energyCheck.create({ data: { userId: id, score } });
   res.status(201).json({ id: check.id, score: check.score, recordedAt: check.recordedAt });
 });

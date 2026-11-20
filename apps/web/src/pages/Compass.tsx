@@ -10,6 +10,7 @@ import {
   type CompassTodayDTO,
 } from "@compasso/shared";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, cn, Progress, Spinner, toast } from "@compasso/ui";
+import { EnergyLauncher } from "../components/EnergyLauncher";
 import { QpLauncher } from "../components/Qp";
 import { Timeline } from "../components/Timeline";
 import { EnergyCheckOverlay } from "../components/EnergyCheckOverlay";
@@ -321,6 +322,7 @@ export function CompassPage() {
         )}
 
         <QpLauncher settings={data.settings} qpToday={data.qpToday} onSessionChange={setQpActive} />
+        <EnergyLauncher lastAt={energy.lastAt} now={now} timezone={tz} onStart={energy.openManual} />
       </div>
 
       <aside className="flex flex-col gap-3">

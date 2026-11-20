@@ -2,7 +2,7 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app";
 import { signAccessToken } from "../src/lib/tokens";
-import { dayBoundsUtc, hourIn, todayIn } from "../src/lib/time";
+import { dayBoundsUtc, hourIn, sameLocalHour, todayIn } from "../src/lib/time";
 
 // Testes que não precisam de banco: validação de entrada, autenticação e autorização.
 const app = createApp();
@@ -88,6 +88,14 @@ describe("registro de energia", () => {
       const res = await request(app).post("/api/v1/energy-checks").set("Authorization", `Bearer ${token}`).send({ score });
       expect(res.status).toBe(400);
     }
+  });
+
+  it("considera a hora cheia no fuso do usuário para barrar um novo registro", () => {
+    const tz = "America/Sao_Paulo";
+    expect(sameLocalHour(tz, new Date("2026-11-19T17:05:00Z"), new Date("2026-11-19T17:59:00Z"))).toBe(true);
+    expect(sameLocalHour(tz, new Date("2026-11-19T17:59:00Z"), new Date("2026-11-19T18:00:00Z"))).toBe(false);
+    // Mesma hora local em dias diferentes não conta como a mesma hora.
+    expect(sameLocalHour(tz, new Date("2026-11-18T17:05:00Z"), new Date("2026-11-19T17:05:00Z"))).toBe(false);
   });
 
   it("exige JWT", async () => {
