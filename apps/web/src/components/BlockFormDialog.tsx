@@ -5,6 +5,10 @@ import { Check, Trash2 } from "lucide-react";
 import {
   BLOCK_COLORS,
   blockInputSchema,
+  minutesToTime,
+  peakHours,
+  reliableEnergyHours,
+  timeToMinutes,
   WEEKDAYS,
   type BlockScope,
   type BlockDTO,
@@ -33,7 +37,8 @@ import {
   toast,
 } from "@compasso/ui";
 import { api } from "../lib/api";
-import { WEEKDAY_LABELS, formatShortDate } from "../lib/time";
+import { useEnergyHours } from "../hooks/useEnergyHours";
+import { WEEKDAY_LABELS, formatShortDate, todayInBrowser } from "../lib/time";
 
 /** O Select do Radix não aceita item com valor vazio; este valor representa a opção "Sem categoria". */
 const NO_CATEGORY = "__none__";
@@ -80,9 +85,12 @@ export function BlockFormDialog({
   onOpenChange,
   draft,
   defaultDate,
+  onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Chamado com o bloco gravado (ex.: a pergunta focal liga o bloco novo à Única Coisa do dia). */
+  onSaved?: (block: BlockDTO) => void;
   /** Com id = edição; sem id = novo bloco (ou duplicado). */
   draft: BlockDraft;
   defaultDate: string;
@@ -116,6 +124,18 @@ export function BlockFormDialog({
   const repeatMode = watch("repeatMode");
   const weekdays = watch("repeatWeekdays");
   const color = watch("color");
+  const isOneThing = watch("isOneThing");
+  // A Única Coisa no pico de energia: sugere o horário de maior energia média dos últimos 30 dias.
+  const energyHours = useEnergyHours(open ? todayInBrowser() : undefined);
+  const peak = peakHours(energyHours, 1)[0];
+  const peakAverage = peak !== undefined ? reliableEnergyHours(energyHours).get(peak) : undefined;
+  const usePeak = () => {
+    if (peak === undefined) return;
+    const duration = timeToMinutes(watch("endTime")) - timeToMinutes(watch("startTime"));
+    const start = peak * 60;
+    setValue("startTime", minutesToTime(start));
+    setValue("endTime", minutesToTime(Math.min(start + (duration > 0 ? duration : 90), 23 * 60 + 59)));
+  };
 
   const done = (message: string) => {
     qc.invalidateQueries({ queryKey: ["blocks"] });
@@ -132,7 +152,8 @@ export function BlockFormDialog({
             payload,
           )
         : api.post<BlockDTO>("/blocks", payload),
-    onSuccess: (_, { scope }) =>
+    onSuccess: (block, { scope }) => {
+      onSaved?.(block);
       done(
         !editing
           ? "Bloco criado."
@@ -141,7 +162,8 @@ export function BlockFormDialog({
             : scope === "single"
               ? "Bloco atualizado neste dia."
               : "Bloco atualizado.",
-      ),
+      );
+    },
     onError: (e: Error) => {
       setPendingEdit(null);
       setFormError(e instanceof ApiError ? e.message : "Não foi possível salvar.");
@@ -378,6 +400,17 @@ export function BlockFormDialog({
               <strong className="font-medium">A Única Coisa</strong> — o bloco mais importante do dia. Só um por dia.
             </span>
           </label>
+          {isOneThing && peak !== undefined && peakAverage !== undefined && (
+            <div className="-mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed px-3 py-2 text-sm">
+              <span className="text-muted-foreground">
+                Seu pico de energia costuma ser às {peak}h (média{" "}
+                {peakAverage.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}).
+              </span>
+              <Button type="button" size="sm" variant="outline" onClick={usePeak}>
+                Usar esse horário
+              </Button>
+            </div>
+          )}
 
           {formError && (
             <p role="alert" className="rounded-lg bg-destructive/25 p-3 text-sm">

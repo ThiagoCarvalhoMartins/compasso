@@ -1,5 +1,5 @@
 import { MIN_BLOCK_MINUTES, type BlockLogStatus } from "./constants";
-import type { BlockDTO, BlockSummaryDay } from "./types";
+import type { BlockDTO, BlockSummaryDay, EnergyHour } from "./types";
 
 /** Campos de bloco que as regras de agenda precisam. */
 export type BlockLike = Pick<
@@ -238,6 +238,90 @@ export function findOneThingConflict<T extends BlockLike>(candidate: BlockLike, 
         blocksShareADay(candidate, b),
     ) ?? null
   );
+}
+
+/** Horário sugerido para a Única Coisa. `average` é a energia média prevista; nulo sem dados suficientes. */
+export interface FocusSlot {
+  startTime: string;
+  endTime: string;
+  average: number | null;
+}
+
+/** Uma hora só entra na conta com pelo menos 3 registros: um dia bom isolado não vira "pico". */
+export const FOCUS_MIN_CHECKS_PER_HOUR = 3;
+/** Abaixo disso, a sugestão é só o próximo horário livre. */
+export const FOCUS_MIN_CHECKS = 10;
+const SLOT_STEP = 15;
+const DAY_END = 23 * 60;
+
+/**
+ * Horas com energia confiável (média com registros suficientes). Vazio quando ainda não há dados bastantes
+ * para falar em pico.
+ */
+export function reliableEnergyHours(hours: EnergyHour[]): Map<number, number> {
+  const total = hours.reduce((s, h) => s + h.count, 0);
+  const reliable = new Map<number, number>();
+  if (total < FOCUS_MIN_CHECKS) return reliable;
+  for (const h of hours) {
+    if (h.average !== null && h.count >= FOCUS_MIN_CHECKS_PER_HOUR) reliable.set(h.hour, h.average);
+  }
+  return reliable.size >= 2 ? reliable : new Map();
+}
+
+/** As horas de maior energia (até `top`), da melhor para a pior. Só entram horas acima da média da própria pessoa. */
+export function peakHours(hours: EnergyHour[], top = 3): number[] {
+  const reliable = [...reliableEnergyHours(hours)];
+  const mean = reliable.reduce((s, [, avg]) => s + avg, 0) / (reliable.length || 1);
+  return reliable
+    .filter(([, avg]) => avg > mean)
+    .sort((a, b) => b[1] - a[1] || a[0] - b[0])
+    .slice(0, top)
+    .map(([hour]) => hour);
+}
+
+/**
+ * Sugere onde encaixar a Única Coisa hoje: o espaço livre (sem sobrepor blocos) a partir de `fromMinute` com
+ * a maior energia média nas horas que cobre. Tenta `duration` e, se não couber, durações menores (até 30 min).
+ * Sem dados confiáveis de energia, devolve o próximo espaço livre. Nulo se nada couber até as 23h.
+ */
+export function suggestFocusSlot(
+  dayBlocks: Pick<BlockLike, "startTime" | "endTime">[],
+  hours: EnergyHour[],
+  fromMinute: number,
+  duration = 90,
+): FocusSlot | null {
+  const busy = dayBlocks
+    .map((b) => [timeToMinutes(b.startTime), timeToMinutes(b.endTime)] as const)
+    .sort((a, b) => a[0] - b[0]);
+  const isFree = (start: number, end: number) => busy.every(([s, e]) => end <= s || start >= e);
+  const reliable = reliableEnergyHours(hours);
+  const known = [...reliable.values()];
+  const mean = known.length ? known.reduce((s, v) => s + v, 0) / known.length : 0;
+  // Média ponderada pelos minutos de cada hora coberta; horas sem dados entram com a média geral.
+  const score = (start: number, end: number) => {
+    let sum = 0;
+    for (let m = start; m < end; m++) sum += reliable.get(Math.floor(m / 60)) ?? mean;
+    return sum / (end - start);
+  };
+  const first = Math.ceil(fromMinute / SLOT_STEP) * SLOT_STEP;
+
+  for (const length of [...new Set([duration, 60, 45, 30])].filter((l) => l <= duration)) {
+    let best: { start: number; score: number } | null = null;
+    for (let start = first; start + length <= DAY_END; start += SLOT_STEP) {
+      if (!isFree(start, start + length)) continue;
+      if (!reliable.size) return { startTime: minutesToTime(start), endTime: minutesToTime(start + length), average: null };
+      const s = score(start, start + length);
+      if (!best || s > best.score + 1e-9) best = { start, score: s };
+    }
+    if (best) {
+      return {
+        startTime: minutesToTime(best.start),
+        endTime: minutesToTime(best.start + length),
+        average: Math.round(best.score * 10) / 10,
+      };
+    }
+  }
+  return null;
 }
 
 export type AlertKind = "start" | "end";

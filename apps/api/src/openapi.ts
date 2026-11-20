@@ -31,6 +31,8 @@ const routes: Route[] = [
   ["post", "/qp-sessions", "Inicia uma sessão QP", "Repetições QP"],
   ["patch", "/qp-sessions/{id}", "Encerra a sessão com o tempo realizado", "Repetições QP"],
   ["get", "/qp-sessions/summary", "Repetições QP por dia (?from=&to=)", "Analytics"],
+  ["put", "/focus/{date}", "Grava a pergunta focal do dia (A Única Coisa)", "Pergunta focal"],
+  ["get", "/focus/summary", "A Única Coisa de cada dia e como foi marcada (?from=&to=)", "Analytics"],
   ["post", "/energy-checks", "Registra a nota de energia (0 a 10)", "Energia"],
   ["get", "/energy-checks/last", "Instante e nota do último registro de energia", "Energia"],
   ["get", "/energy-checks/summary", "Média de energia por hora do dia (?from=&to=)", "Analytics"],

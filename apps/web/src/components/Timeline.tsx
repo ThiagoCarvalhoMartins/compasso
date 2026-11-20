@@ -13,10 +13,13 @@ export function Timeline({
   blocks,
   secondOfDay,
   currentId,
+  oneThingId,
 }: {
   blocks: CompassBlock[];
   secondOfDay: number;
   currentId: string | null;
+  /** Bloco da Única Coisa de hoje (pergunta focal ou estrela). */
+  oneThingId: string | null;
 }) {
   const nowMin = secondOfDay / 60;
   const starts = blocks.map((b) => timeToMinutes(b.startTime));
@@ -77,7 +80,7 @@ export function Timeline({
                   {!hideText && (
                     <>
                       <div className="flex items-center gap-1 font-medium leading-tight">
-                        {b.isOneThing && <Star className="size-3.5 fill-current" aria-label="A Única Coisa" />}
+                        {b.id === oneThingId && <Star className="size-3.5 fill-current" aria-label="A Única Coisa" />}
                         <span className="truncate">{b.title}</span>
                         {reminder && (
                           <span
@@ -104,7 +107,7 @@ export function Timeline({
                   <TooltipTrigger asChild>{item}</TooltipTrigger>
                   <TooltipContent side="right" align="start">
                     <div className="flex items-center gap-1 font-medium">
-                      {b.isOneThing && (
+                      {b.id === oneThingId && (
                         <Star className="size-3.5 fill-current text-primary-strong" aria-label="A Única Coisa" />
                       )}
                       <span>{b.title}</span>

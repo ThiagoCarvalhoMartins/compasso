@@ -75,6 +75,26 @@ export interface CompassTodayDTO {
   })[];
   settings: SettingsDTO;
   qpToday: number;
+  /** Pergunta focal do dia (A Única Coisa); nulo enquanto não foi respondida nem dispensada. */
+  focus: DailyFocusDTO | null;
+}
+
+/** Resposta do dia à pergunta focal: a Única Coisa de hoje e o bloco escolhido para ela. */
+export interface DailyFocusDTO {
+  date: string;
+  answer: string | null;
+  blockId: string | null;
+  /** "Agora não": a pergunta não volta naquele dia. */
+  skipped: boolean;
+}
+
+/** A Única Coisa de um dia no Analytics: o bloco escolhido na pergunta focal ou, sem ela, o bloco com estrela. */
+export interface FocusSummaryDay {
+  date: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  status: BlockLogStatus | null;
 }
 
 export interface QpSummaryDay {

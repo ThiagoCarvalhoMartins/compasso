@@ -151,6 +151,11 @@ blocksRouter.patch("/:id", async (req, res) => {
         where: { blockId: before.id, date: following ? { gte: dbDate } : dbDate },
         data: { blockId: novo.id },
       });
+      // A Única Coisa escolhida para esses dias também passa para o novo bloco.
+      await tx.dailyFocus.updateMany({
+        where: { blockId: before.id, date: following ? { gte: dbDate } : dbDate },
+        data: { blockId: novo.id },
+      });
       return novo;
     });
     res.json(toBlockDTO(created));

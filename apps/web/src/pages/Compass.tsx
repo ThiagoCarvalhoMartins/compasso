@@ -1,16 +1,20 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useMutationState, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { BellOff, BellRing, Lightbulb, LightbulbOff, Pause, Play, RotateCcw, Sprout, Star } from "lucide-react";
 import {
   compassState,
+  suggestFocusSlot,
   formatCountdown,
   timeToMinutes,
   type BlockLogStatus,
   type CompassTodayDTO,
 } from "@compasso/shared";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, cn, Progress, Spinner, toast } from "@compasso/ui";
+import { BlockFormDialog, type BlockDraft } from "../components/BlockFormDialog";
 import { EnergyLauncher } from "../components/EnergyLauncher";
+import { FocusCard } from "../components/FocusCard";
+import { FocusOverlay, type FocusClose } from "../components/FocusOverlay";
 import { MinimumVersionDialog } from "../components/MinimumVersionDialog";
 import { QpLauncher } from "../components/Qp";
 import { Timeline } from "../components/Timeline";
@@ -18,6 +22,7 @@ import { EnergyCheckOverlay } from "../components/EnergyCheckOverlay";
 import { hasStartedThisSession, WelcomeOverlay } from "../components/WelcomeOverlay";
 import { useAlerts } from "../hooks/useAlerts";
 import { useEnergyCheck } from "../hooks/useEnergyCheck";
+import { useEnergyHours } from "../hooks/useEnergyHours";
 import { useNow } from "../hooks/useNow";
 import { useWakeLock } from "../hooks/useWakeLock";
 import { api } from "../lib/api";
@@ -35,6 +40,7 @@ const STATUS_CHIP: Record<BlockLogStatus, string> = {
   SKIPPED: "bg-status-skipped text-status-skipped-foreground",
 };
 const MARK_BLOCK_KEY = ["mark-block"];
+const NO_DRAFT: BlockDraft = {};
 
 type MarkBlockVariables = { blockId: string; status: BlockLogStatus; viaMinimum?: boolean };
 
@@ -55,7 +61,13 @@ export function CompassPage() {
   const { user } = useAuth();
   const [qpActive, setQpActive] = useState(false);
   // O registro de energia nunca aparece por cima da tela de boas-vindas nem da sessão QP.
-  const energy = useEnergyCheck(user?.id, welcomed && !qpActive);
+  // Pergunta focal: "auto" ao abrir o dia sem resposta; "edit" pelo card. Bloco novo sugerido por ela, a criar.
+  const [focusMode, setFocusMode] = useState<"auto" | "edit" | null>(null);
+  const [focusDraft, setFocusDraft] = useState<BlockDraft | null>(null);
+  const focusAsked = useRef(false);
+  // O registro de energia espera a pergunta focal do dia ser respondida ou dispensada.
+  const energy = useEnergyCheck(user?.id, welcomed && !qpActive && focusMode === null && !!data && data.focus !== null);
+  const energyHours = useEnergyHours(data?.date);
 
   const tz = data?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const local = zonedNow(now, tz);
@@ -75,6 +87,41 @@ export function CompassPage() {
   }, [mutedUntil, now]);
 
   const blocks = useMemo<CompassBlock[]>(() => data?.blocks ?? [], [data]);
+
+  // Abre a pergunta focal uma vez, logo depois de "Iniciar meu dia", se ainda não houver resposta hoje.
+  useEffect(() => {
+    if (!welcomed || !data || data.focus !== null || qpActive || energy.open || focusAsked.current) return;
+    focusAsked.current = true;
+    setFocusMode("auto");
+  }, [welcomed, data, qpActive, energy.open]);
+
+  const plannedOneThing = blocks.find((b) => b.isOneThing) ?? null;
+  const focus = data?.focus ?? null;
+  // A escolha do dia vale sobre a estrela do bloco; sem resposta (ou dispensada), vale a estrela.
+  const oneThing =
+    focus && !focus.skipped ? (focus.blockId ? (blocks.find((b) => b.id === focus.blockId) ?? null) : null) : plannedOneThing;
+
+  const closeFocus = ({ createBlock }: FocusClose) => {
+    setFocusMode(null);
+    if (!createBlock || !data) return;
+    setFocusDraft({
+      title: createBlock.title,
+      recurrence: "ONCE",
+      date: data.date,
+      startTime: createBlock.slot.startTime,
+      endTime: createBlock.slot.endTime,
+      // RN10: só um bloco com estrela por dia; com outro já marcado, a escolha do dia basta.
+      isOneThing: !plannedOneThing,
+    });
+  };
+
+  const linkFocusBlock = (blockId: string) => {
+    if (!data || !focusDraft?.title) return;
+    api
+      .put(`/focus/${data.date}`, { answer: focusDraft.title, blockId, skipped: false })
+      .then(() => qc.invalidateQueries({ queryKey: ["compass"] }))
+      .catch((e: Error) => toast.error(e.message));
+  };
   // Bloco à espera da escolha "versão de 2 minutos ou Não realizado".
   const [askMinimum, setAskMinimum] = useState<CompassBlock | null>(null);
   useAlerts({
@@ -118,6 +165,17 @@ export function CompassPage() {
   };
   const welcome = !welcomed ? (
     <WelcomeOverlay onStart={enterApp} onClosed={() => setWelcomed(true)} />
+  ) : focusMode && data ? (
+    <FocusOverlay
+      date={data.date}
+      blocks={blocks}
+      nowMinute={Math.floor(local.secondOfDay / 60)}
+      planned={plannedOneThing}
+      current={focusMode === "edit" ? focus : null}
+      slot={suggestFocusSlot(blocks, energyHours, local.secondOfDay / 60)}
+      editing={focusMode === "edit"}
+      onClosed={closeFocus}
+    />
   ) : (
     energy.open && <EnergyCheckOverlay onClosed={energy.finish} />
   );
@@ -174,6 +232,8 @@ export function CompassPage() {
           <h1 className="text-3xl md:text-4xl">Seu dia em ritmo</h1>
         </div>
 
+        <FocusCard focus={focus} block={oneThing} secondOfDay={local.secondOfDay} onEdit={() => setFocusMode("edit")} />
+
         {/* RF04.3 / RF04.5 */}
         <Card className={endWarning ? "border-accent bg-accent/30" : undefined} aria-live="polite">
           <CardHeader>
@@ -183,7 +243,7 @@ export function CompassPage() {
             {state.current ? (
               <>
                 <CardTitle className="flex items-center gap-2 text-3xl md:text-4xl">
-                  {state.current.isOneThing && <Star className="size-6 fill-accent" aria-label="A Única Coisa" />}
+                  {state.current.id === oneThing?.id && <Star className="size-6 fill-accent" aria-label="A Única Coisa" />}
                   {state.current.title}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
@@ -365,6 +425,14 @@ export function CompassPage() {
           </Card>
         )}
 
+        <BlockFormDialog
+          open={!!focusDraft}
+          onOpenChange={(open) => !open && setFocusDraft(null)}
+          draft={focusDraft ?? NO_DRAFT}
+          defaultDate={data.date}
+          onSaved={(block) => linkFocusBlock(block.id)}
+        />
+
         {askMinimum && (
           <MinimumVersionDialog
             block={askMinimum}
@@ -383,7 +451,12 @@ export function CompassPage() {
 
       <aside className="flex flex-col gap-3">
         <h2 className="text-xl">Hoje</h2>
-        <Timeline blocks={blocks} secondOfDay={local.secondOfDay} currentId={state.current?.id ?? null} />
+        <Timeline
+          blocks={blocks}
+          secondOfDay={local.secondOfDay}
+          currentId={state.current?.id ?? null}
+          oneThingId={oneThing?.id ?? null}
+        />
         {blocks.some((b) => b.log) && (
           <ul className="flex flex-wrap gap-1.5 text-xs">
             {blocks
