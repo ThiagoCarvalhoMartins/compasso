@@ -64,7 +64,7 @@ export function AnalyticsPage() {
           <h1 className="text-3xl md:text-4xl">Analytics</h1>
           <p className="mt-1 text-muted-foreground">Como seus dias têm saído do plano, quantas Repetições QP você fez e em que horários sua energia é maior.</p>
         </div>
-        <div role="group" aria-label="Período" className="flex gap-1 rounded-lg border bg-card p-1">
+        <div role="group" aria-label="Período" className="ml-auto flex gap-1 rounded-lg border bg-card p-1">
           {PERIODS.map((p) => (
             <Button
               key={p}
