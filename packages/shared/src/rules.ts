@@ -110,6 +110,41 @@ export function seriesHasOccurrences(block: BlockLike): boolean {
   return dateRange(block.startsOn, block.endsOn).some((d) => blockAppliesOn(block, d));
 }
 
+/**
+ * Ocorrência anterior de um recorrente antes de `date` (exclusive), respeitando dias da semana, início, fim e
+ * dias excluídos da série. `notBefore` ignora dias anteriores à criação do bloco. Nulo para ONCE ou sem anterior.
+ */
+export function previousOccurrence(block: BlockLike, date: string, notBefore?: string): string | null {
+  if (block.recurrence !== "REPEAT" || !block.startsOn || !block.repeatWeekdays.length) return null;
+  const floor = notBefore && notBefore > block.startsOn ? notBefore : block.startsOn;
+  // Exclusões são finitas, mas uma série muito recortada pode pular semanas: olha até um ano para trás.
+  for (let d = addDays(date, -1), i = 0; d >= floor && i < 366; d = addDays(d, -1), i++) {
+    if (blockAppliesOn(block, d)) return d;
+  }
+  return null;
+}
+
+/** Falhou = "Não realizado" ou sem registro. Parcial não é falha: fazer pouco já conta. */
+export const isMiss = (status: BlockLogStatus | null | undefined) => !status || status === "SKIPPED";
+
+/**
+ * Nunca falhe duas vezes: quantas ocorrências seguidas antes de `date` falharam (até `limit`).
+ * `statusOf(dia)` devolve o registro do bloco naquele dia.
+ */
+export function consecutiveMisses(
+  block: BlockLike,
+  date: string,
+  statusOf: (day: string) => BlockLogStatus | null | undefined,
+  { notBefore, limit = 7 }: { notBefore?: string; limit?: number } = {},
+): { misses: number; previousDate: string | null } {
+  const previousDate = previousOccurrence(block, date, notBefore);
+  let misses = 0;
+  for (let d = previousDate; d && misses < limit && isMiss(statusOf(d)); d = previousOccurrence(block, d, notBefore)) {
+    misses++;
+  }
+  return { misses, previousDate };
+}
+
 /** Monta o dia: recorrentes que valem na data + blocos ONCE da data, ordenados pelo início. */
 export function blocksForDate<T extends BlockLike>(blocks: T[], date: string): T[] {
   return blocks
@@ -123,19 +158,36 @@ export function blocksForDate<T extends BlockLike>(blocks: T[], date: string): T
  */
 export function summarizeBlockDays(
   blocks: (BlockLike & { id: string; title: string; color: string })[],
-  logs: { blockId: string; date: string; status: BlockLogStatus }[],
+  logs: { blockId: string; date: string; status: BlockLogStatus; viaMinimum?: boolean }[],
   days: string[],
+  {
+    createdOn,
+    logsFrom,
+  }: {
+    /** Dia de criação de cada bloco: ocorrências anteriores a ele não contam como falha. */
+    createdOn?: Map<string, string>;
+    /** Primeiro dia coberto por `logs`; antes dele o registro é desconhecido e não conta para as retomadas. */
+    logsFrom?: string;
+  } = {},
 ): BlockSummaryDay[] {
-  const statusOf = new Map(logs.map((l) => [`${l.blockId}|${l.date}`, l.status]));
+  const byKey = new Map(logs.map((l) => [`${l.blockId}|${l.date}`, l]));
   return days.map((date) => {
-    const day: BlockSummaryDay = { date, planned: 0, done: 0, partial: 0, skipped: 0, marked: [] };
+    const day: BlockSummaryDay = { date, planned: 0, done: 0, partial: 0, skipped: 0, viaMinimum: 0, comebacks: 0, marked: [] };
     for (const b of blocksForDate(blocks, date)) {
       day.planned++;
-      const status = statusOf.get(`${b.id}|${date}`);
+      const log = byKey.get(`${b.id}|${date}`);
+      const status = log?.status;
       if (!status) continue;
       if (status === "DONE") day.done++;
       else if (status === "PARTIAL") day.partial++;
       else if (status === "SKIPPED") day.skipped++;
+      if (status === "PARTIAL" && log.viaMinimum) day.viaMinimum++;
+      if (status !== "SKIPPED") {
+        const previous = previousOccurrence(b, date, createdOn?.get(b.id));
+        if (previous && (!logsFrom || previous >= logsFrom) && isMiss(byKey.get(`${b.id}|${previous}`)?.status)) {
+          day.comebacks++;
+        }
+      }
       const { id: blockId, title, color, startTime, endTime } = b;
       day.marked.push({ blockId, title, color, startTime, endTime, status });
     }

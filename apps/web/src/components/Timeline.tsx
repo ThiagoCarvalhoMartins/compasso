@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { Star } from "lucide-react";
-import { timeToMinutes, type BlockDTO } from "@compasso/shared";
+import { RotateCcw, Star } from "lucide-react";
+import { timeToMinutes } from "@compasso/shared";
 import { cn, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@compasso/ui";
+import { missReminder, type CompassBlock } from "../lib/streak";
 
 const PX_PER_MIN = 1.1;
 /** Altura mínima (px) para caber uma linha de título sem cortar. */
@@ -13,7 +14,7 @@ export function Timeline({
   secondOfDay,
   currentId,
 }: {
-  blocks: BlockDTO[];
+  blocks: CompassBlock[];
   secondOfDay: number;
   currentId: string | null;
 }) {
@@ -57,6 +58,7 @@ export function Timeline({
               // Abaixo de uma linha de texto (~16px) o título seria cortado: oculta o conteúdo e mostra os dados no tooltip.
               const hideText = height < MIN_TEXT_HEIGHT;
               const isCurrent = b.id === currentId;
+              const reminder = missReminder(b);
               const item = (
                 <li
                   key={b.id}
@@ -77,6 +79,15 @@ export function Timeline({
                       <div className="flex items-center gap-1 font-medium leading-tight">
                         {b.isOneThing && <Star className="size-3.5 fill-current" aria-label="A Única Coisa" />}
                         <span className="truncate">{b.title}</span>
+                        {reminder && (
+                          <span
+                            className="ml-auto flex shrink-0 items-center gap-1 rounded-full bg-accent px-1.5 py-px text-[10px] font-medium leading-tight text-accent-foreground"
+                            title={reminder.message}
+                          >
+                            <RotateCcw className="size-3" aria-hidden />
+                            <span className={compact ? "sr-only" : undefined}>{reminder.badge}</span>
+                          </span>
+                        )}
                       </div>
                       {height > 34 && (
                         <div className="text-xs opacity-75">
@@ -98,6 +109,7 @@ export function Timeline({
                       )}
                       <span>{b.title}</span>
                     </div>
+                    {reminder && <div className="text-xs font-medium">{reminder.badge}</div>}
                     <div className="text-xs text-muted-foreground">
                       {b.startTime}–{b.endTime}
                     </div>

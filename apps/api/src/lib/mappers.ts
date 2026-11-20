@@ -39,6 +39,7 @@ export const toBlockDTO = (b: Block): BlockDTO => ({
   endTime: fromDbTime(b.endTime),
   color: b.color,
   isOneThing: b.isOneThing,
+  minimumVersion: b.minimumVersion,
 });
 
 export const toCategoryDTO = (c: Category): CategoryDTO => ({

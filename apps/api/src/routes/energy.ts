@@ -24,14 +24,14 @@ energyRouter.post("/", async (req, res) => {
   res.status(201).json({ id: check.id, score: check.score, recordedAt: check.recordedAt });
 });
 
-// Último registro, para o app respeitar o intervalo mínimo entre aparelhos.
+// Último registro: o app respeita o intervalo mínimo entre aparelhos e, com energia baixa, destaca a versão de 2 minutos.
 energyRouter.get("/last", async (req, res) => {
   const last = await prisma.energyCheck.findFirst({
     where: { userId: userId(req) },
     orderBy: { recordedAt: "desc" },
-    select: { recordedAt: true },
+    select: { recordedAt: true, score: true },
   });
-  res.json({ recordedAt: last?.recordedAt ?? null });
+  res.json({ recordedAt: last?.recordedAt ?? null, score: last?.score ?? null });
 });
 
 // Média das notas por hora do dia no período, no fuso do usuário.

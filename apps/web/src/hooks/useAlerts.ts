@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { minutesToTime, planAlerts, type BlockDTO, type SettingsDTO } from "@compasso/shared";
+import { minutesToTime, planAlerts, type SettingsDTO } from "@compasso/shared";
 import { toast } from "@compasso/ui";
 import { playAlert } from "../lib/audio";
+import { missReminder, type CompassBlock } from "../lib/streak";
 import { localTimeToEpoch } from "../lib/time";
 
 /** Alertas que passaram há até este tempo (ex.: aba voltou do segundo plano) ainda tocam, atrasados. */
@@ -10,7 +11,7 @@ const LATE_TOLERANCE_MS = 60_000;
 interface Options {
   date: string;
   timezone: string;
-  blocks: BlockDTO[];
+  blocks: CompassBlock[];
   settings: SettingsDTO;
   /** Usuário iniciou o dia e não pausou as notificações. */
   started: boolean;
@@ -47,7 +48,10 @@ export function useAlerts({ date, timezone, blocks, settings, started, mutedUnti
         alert.kind === "start"
           ? `Começou: ${alert.block.title}`
           : `Faltam ${s.endAlertMinutes} min para o fim de ${alert.block.title}`;
-      const body = `${alert.block.startTime}–${alert.block.endTime}`;
+      const time = `${alert.block.startTime}–${alert.block.endTime}`;
+      // Nunca falhe duas vezes: o alerta de início lembra que a última ocorrência não deu.
+      const reminder = alert.kind === "start" ? missReminder(alert.block) : null;
+      const body = reminder ? `${time} · ${reminder.message}` : time;
       // RNF10: todo alerta sonoro tem equivalente visual.
       toast(title, { description: body, duration: 10_000 });
       if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {

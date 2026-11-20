@@ -21,6 +21,8 @@ export interface BlockDTO {
   endTime: string;
   color: string;
   isOneThing: boolean;
+  /** Versão de 2 minutos: o mínimo que já conta como não ter desistido (Hábitos Atômicos). */
+  minimumVersion: string | null;
 }
 
 export interface BlockLogDTO {
@@ -61,7 +63,16 @@ export interface SettingsDTO {
 export interface CompassTodayDTO {
   date: string;
   timezone: string;
-  blocks: (BlockDTO & { log: BlockLogStatus | null })[];
+  blocks: (BlockDTO & {
+    log: BlockLogStatus | null;
+    /**
+     * Nunca falhe duas vezes: quantas ocorrências seguidas, antes de hoje, ficaram como "Não realizado" ou sem
+     * registro (0 = a última foi concluída ou parcial). Só para recorrentes.
+     */
+    previousMisses: number;
+    /** Data da ocorrência anterior do recorrente (YYYY-MM-DD), quando houver. */
+    previousDate: string | null;
+  })[];
   settings: SettingsDTO;
   qpToday: number;
 }
@@ -96,6 +107,10 @@ export interface BlockSummaryDay {
   done: number;
   partial: number;
   skipped: number;
+  /** Parciais que vieram da versão de 2 minutos. */
+  viaMinimum: number;
+  /** Blocos concluídos ou parciais logo depois de uma ocorrência que falhou (nunca falhe duas vezes). */
+  comebacks: number;
   /** Os blocos marcados no dia (concluídos, parciais e não realizados), pela ordem de início. */
   marked: BlockSummaryEntry[];
 }

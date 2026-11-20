@@ -114,6 +114,8 @@ model Block {
   endTime        DateTime   @map("end_time") @db.Time(0)
   color          String     @db.Char(7)
   isOneThing     Boolean    @default(false) @map("is_one_thing")
+  /// Versão de 2 minutos: o mínimo que já conta como não ter desistido
+  minimumVersion String?    @map("minimum_version") @db.VarChar(120)
   createdAt      DateTime   @default(now()) @map("created_at")
   updatedAt      DateTime   @updatedAt @map("updated_at")
 
@@ -132,6 +134,8 @@ model BlockLog {
   userId  String         @map("user_id")
   date    DateTime       @db.Date
   status  BlockLogStatus
+  /// Parcial feito pela versão de 2 minutos
+  viaMinimum Boolean     @default(false) @map("via_minimum")
   notedAt DateTime       @default(now()) @map("noted_at")
 
   block Block @relation(fields: [blockId], references: [id], onDelete: Cascade)

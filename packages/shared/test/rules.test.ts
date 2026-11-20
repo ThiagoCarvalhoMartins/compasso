@@ -6,9 +6,11 @@ import {
   compassState,
   findOneThingConflict,
   findOverlap,
+  consecutiveMisses,
   formatCountdown,
   passwordSchema,
   planAlerts,
+  previousOccurrence,
   seriesHasOccurrences,
   startOfWeek,
   summarizeBlockDays,
@@ -244,14 +246,62 @@ describe("resumo diário dos blocos (Analytics)", () => {
         done: 1,
         partial: 0,
         skipped: 1,
+        viaMinimum: 0,
+        comebacks: 0,
         // Pela ordem de início, não pela ordem da lista.
         marked: [
           { ...treino, status: "DONE" },
           { ...leitura, status: "SKIPPED" },
         ],
       },
-      { date: "2026-11-10", planned: 0, done: 0, partial: 0, skipped: 0, marked: [] },
-      { date: "2026-11-11", planned: 1, done: 0, partial: 1, skipped: 0, marked: [{ ...treino, status: "PARTIAL" }] },
+      { date: "2026-11-10", planned: 0, done: 0, partial: 0, skipped: 0, viaMinimum: 0, comebacks: 0, marked: [] },
+      {
+        date: "2026-11-11",
+        planned: 1,
+        done: 0,
+        partial: 1,
+        skipped: 0,
+        viaMinimum: 0,
+        comebacks: 0,
+        marked: [{ ...treino, status: "PARTIAL" }],
+      },
     ]);
+  });
+});
+
+describe("nunca falhe duas vezes", () => {
+  // 2026-11-09 é segunda; a série vale seg, qua e sex desde 02/11 e pulou a quarta 11/11.
+  const treino = repeat([1, 3, 5], "2026-11-02", "08:00", "09:00", { excludedDates: ["2026-11-11"] });
+
+  it("acha a ocorrência anterior respeitando dias da semana, exclusões, início e criação", () => {
+    expect(previousOccurrence(treino, "2026-11-13")).toBe("2026-11-09"); // sexta → segunda (pula a quarta excluída)
+    expect(previousOccurrence(treino, "2026-11-09")).toBe("2026-11-06");
+    expect(previousOccurrence(treino, "2026-11-02")).toBeNull(); // primeiro dia da série
+    expect(previousOccurrence(treino, "2026-11-09", "2026-11-07")).toBeNull(); // criado depois da sexta
+    expect(previousOccurrence(once("2026-11-09", "08:00", "09:00"), "2026-11-10")).toBeNull();
+  });
+
+  it("conta falhas seguidas: não realizado e sem registro contam, parcial não", () => {
+    const logs: Record<string, "DONE" | "PARTIAL" | "SKIPPED"> = { "2026-11-04": "PARTIAL", "2026-11-09": "SKIPPED" };
+    // 13/11: anterior 09/11 (não realizado), 06/11 (sem registro), 04/11 (parcial) → 2 falhas seguidas.
+    expect(consecutiveMisses(treino, "2026-11-13", (d) => logs[d])).toEqual({ misses: 2, previousDate: "2026-11-09" });
+    // 06/11: anterior 04/11 parcial → nenhuma falha.
+    expect(consecutiveMisses(treino, "2026-11-06", (d) => logs[d])).toEqual({ misses: 0, previousDate: "2026-11-04" });
+  });
+
+  it("conta retomadas e parciais pela versão de 2 minutos no resumo", () => {
+    const blocks = [{ id: "a", title: "Treino", color: "#f00", ...treino }];
+    const logs = [
+      { blockId: "a", date: "2026-11-06", status: "SKIPPED" as const },
+      { blockId: "a", date: "2026-11-09", status: "PARTIAL" as const, viaMinimum: true }, // retomou pela versão mínima
+      { blockId: "a", date: "2026-11-13", status: "DONE" as const }, // anterior foi parcial: não é retomada
+    ];
+    const days = summarizeBlockDays(blocks, logs, ["2026-11-09", "2026-11-13"], { logsFrom: "2026-11-01" });
+    expect(days.map((d) => [d.viaMinimum, d.comebacks])).toEqual([
+      [1, 1],
+      [0, 0],
+    ]);
+    // Sem os registros do dia anterior, não dá para saber se houve falha.
+    expect(summarizeBlockDays(blocks, logs, ["2026-11-09"], { logsFrom: "2026-11-09" })[0].comebacks).toBe(0);
   });
 });

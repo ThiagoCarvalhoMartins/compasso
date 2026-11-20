@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { TriangleAlert, X } from "lucide-react";
+import { RotateCcw, Sprout, TriangleAlert, X } from "lucide-react";
 import {
   addDays,
   weekdayOf,
@@ -107,8 +107,10 @@ function BlockCompletionCard({ days, period, today }: { days: BlockSummaryDay[];
       done: s.done + d.done,
       partial: s.partial + d.partial,
       skipped: s.skipped + d.skipped,
+      viaMinimum: s.viaMinimum + d.viaMinimum,
+      comebacks: s.comebacks + d.comebacks,
     }),
-    { planned: 0, done: 0, partial: 0, skipped: 0 },
+    { planned: 0, done: 0, partial: 0, skipped: 0, viaMinimum: 0, comebacks: 0 },
   );
   const unmarked = totals.planned - markedCount(totals);
   const max = Math.max(1, ...days.map((d) => d.planned));
@@ -193,6 +195,26 @@ function BlockCompletionCard({ days, period, today }: { days: BlockSummaryDay[];
               </div>
             );
           })}
+        </div>
+
+        {/* Hábitos Atômicos: nunca falhe duas vezes e a versão de 2 minutos. */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-start gap-2.5 rounded-lg border p-3">
+            <RotateCcw className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <div>
+              <p className="text-xs text-muted-foreground">Retomadas</p>
+              <p className="mt-1 text-xl tabular-nums">{totals.comebacks}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">feitos logo depois de uma falha</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2.5 rounded-lg border p-3">
+            <Sprout className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <div>
+              <p className="text-xs text-muted-foreground">Salvos pela versão mínima</p>
+              <p className="mt-1 text-xl tabular-nums">{totals.viaMinimum}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">parciais em vez de não realizados</p>
+            </div>
+          </div>
         </div>
 
         {selectedSegment ? (

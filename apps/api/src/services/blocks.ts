@@ -18,6 +18,18 @@ export async function listUserBlocks(userId: string): Promise<BlockDTO[]> {
 }
 
 /**
+ * Blocos com o dia (no fuso do usuário) em que foram criados: ocorrências anteriores à criação
+ * não contam como falha no "nunca falhe duas vezes".
+ */
+export async function listUserBlocksWithCreation(userId: string, timezone: string) {
+  const rows = await prisma.block.findMany({ where: { userId }, orderBy: { startTime: "asc" } });
+  return {
+    blocks: rows.map(toBlockDTO),
+    createdOn: new Map(rows.map((b) => [b.id, todayIn(timezone, b.createdAt)])),
+  };
+}
+
+/**
  * Normaliza a entrada: cada recorrência guarda só os campos que usa.
  * Ao editar, `current` preserva os cortes da série, que não fazem parte do formulário.
  */
@@ -37,6 +49,7 @@ export function normalizeBlock(input: BlockInput, current?: BlockDTO): Omit<Bloc
     startTime: input.startTime,
     endTime: input.endTime,
     isOneThing: input.isOneThing,
+    minimumVersion: input.minimumVersion || null,
   };
 }
 
@@ -78,6 +91,7 @@ export function toBlockData(block: Omit<BlockDTO, "id">) {
     startTime: toDbTime(block.startTime),
     endTime: toDbTime(block.endTime),
     isOneThing: block.isOneThing,
+    minimumVersion: block.minimumVersion,
   } satisfies Omit<Prisma.BlockUncheckedCreateInput, "userId">;
 }
 

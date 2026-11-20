@@ -100,6 +100,7 @@ export const blockInputSchema = z
     startTime: timeSchema,
     endTime: timeSchema,
     isOneThing: z.boolean().default(false),
+    minimumVersion: z.string().trim().max(120).nullable().optional(),
   })
   .superRefine((value, ctx) => {
     if (isValidTime(value.startTime) && isValidTime(value.endTime)) {
@@ -134,7 +135,11 @@ export const blockScopeQuerySchema = z
   .object({ scope: z.enum(BLOCK_SCOPES).optional(), date: dateSchema.optional() })
   .refine((v) => !v.scope === !v.date, { path: ["date"], message: t("validation.required") });
 
-export const blockLogSchema =z.object({ status: z.enum(BLOCK_LOG_STATUSES) });
+export const blockLogSchema = z.object({
+  status: z.enum(BLOCK_LOG_STATUSES),
+  /** Parcial feito pela versão de 2 minutos. */
+  viaMinimum: z.boolean().default(false),
+});
 
 export const qpStartSchema = z.object({
   plannedSeconds: z

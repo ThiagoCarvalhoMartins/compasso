@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useMutationState, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { BellOff, BellRing, Lightbulb, LightbulbOff, Pause, Play, Star } from "lucide-react";
+import { BellOff, BellRing, Lightbulb, LightbulbOff, Pause, Play, RotateCcw, Sprout, Star } from "lucide-react";
 import {
   compassState,
   formatCountdown,
@@ -11,6 +11,7 @@ import {
 } from "@compasso/shared";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, cn, Progress, Spinner, toast } from "@compasso/ui";
 import { EnergyLauncher } from "../components/EnergyLauncher";
+import { MinimumVersionDialog } from "../components/MinimumVersionDialog";
 import { QpLauncher } from "../components/Qp";
 import { Timeline } from "../components/Timeline";
 import { EnergyCheckOverlay } from "../components/EnergyCheckOverlay";
@@ -23,6 +24,7 @@ import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import { readAlertsPreference, saveAlertsPreference, type AlertsPreference } from "../lib/alertsPreference";
 import { unlockAudio, unlockAudioOnFirstGesture } from "../lib/audio";
+import { isLowEnergy, missReminder, type CompassBlock } from "../lib/streak";
 import { formatLongDate, humanDuration, zonedNow } from "../lib/time";
 
 const MUTE_MINUTES = 30;
@@ -34,7 +36,7 @@ const STATUS_CHIP: Record<BlockLogStatus, string> = {
 };
 const MARK_BLOCK_KEY = ["mark-block"];
 
-type MarkBlockVariables = { blockId: string; status: BlockLogStatus };
+type MarkBlockVariables = { blockId: string; status: BlockLogStatus; viaMinimum?: boolean };
 
 export function CompassPage() {
   const qc = useQueryClient();
@@ -72,7 +74,9 @@ export function CompassPage() {
     if (mutedUntil && now >= mutedUntil) setMutedUntil(null);
   }, [mutedUntil, now]);
 
-  const blocks = useMemo(() => data?.blocks ?? [], [data]);
+  const blocks = useMemo<CompassBlock[]>(() => data?.blocks ?? [], [data]);
+  // Bloco à espera da escolha "versão de 2 minutos ou Não realizado".
+  const [askMinimum, setAskMinimum] = useState<CompassBlock | null>(null);
   useAlerts({
     date: data?.date ?? local.date,
     timezone: tz,
@@ -84,8 +88,12 @@ export function CompassPage() {
 
   const mark = useMutation({
     mutationKey: MARK_BLOCK_KEY,
-    mutationFn: ({ blockId, status }: MarkBlockVariables) => api.put(`/blocks/${blockId}/logs/${data!.date}`, { status }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["compass"] }),
+    mutationFn: ({ blockId, status, viaMinimum = false }: MarkBlockVariables) =>
+      api.put(`/blocks/${blockId}/logs/${data!.date}`, { status, viaMinimum }),
+    onSuccess: (_, { viaMinimum }) => {
+      if (viaMinimum) toast.success("Versão mínima registrada. Você não desistiu.");
+      return qc.invalidateQueries({ queryKey: ["compass"] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   // Por bloco, e não mark.isPending: confirmar um bloco não pode travar nem apagar o spinner dos demais.
@@ -134,6 +142,11 @@ export function CompassPage() {
     state.current && state.secondsToCurrentEnd !== null && state.secondsToCurrentEnd <= data.settings.endAlertMinutes * 60;
   const pendingReview = blocks.filter((b) => timeToMinutes(b.endTime) * 60 <= local.secondOfDay && !b.log);
   const muted = mutedUntil !== null;
+  const currentReminder = state.current ? missReminder(state.current) : null;
+  const nextReminder = state.next ? missReminder(state.next) : null;
+  // Versão de 2 minutos no bloco atual: discreta sempre; em destaque quando a energia registrada está baixa.
+  const lowEnergy = isLowEnergy(energy.lastScore, energy.lastAt, now);
+  const showMinimum = !!state.current?.minimumVersion && !state.current.log && !currentReminder;
 
   const setAlerts = (value: Exclude<AlertsPreference, null>) => {
     saveAlertsPreference(value);
@@ -177,6 +190,28 @@ export function CompassPage() {
                   {state.current.startTime}–{state.current.endTime} ·{" "}
                   {humanDuration(timeToMinutes(state.current.endTime) - timeToMinutes(state.current.startTime))}
                 </p>
+                {currentReminder && (
+                  <p className="mt-2 flex gap-2 rounded-lg bg-accent/45 p-3 text-sm">
+                    <RotateCcw className="mt-0.5 size-4 shrink-0" aria-hidden />
+                    <span>
+                      <strong className="font-medium">{currentReminder.badge}.</strong> {currentReminder.message}
+                    </span>
+                  </p>
+                )}
+                {showMinimum && (
+                  <p
+                    className={cn(
+                      "mt-2 flex gap-2 text-sm",
+                      lowEnergy ? "rounded-lg bg-accent/45 p-3" : "text-muted-foreground",
+                    )}
+                  >
+                    <Sprout className="mt-0.5 size-4 shrink-0" aria-hidden />
+                    <span>
+                      {lowEnergy ? "Energia baixa agora? " : "Sem ânimo? "}Comece pela versão de 2 minutos:{" "}
+                      <strong className="font-medium">{state.current.minimumVersion}</strong>
+                    </span>
+                  </p>
+                )}
               </>
             ) : (
               <CardTitle className="text-3xl">
@@ -214,6 +249,11 @@ export function CompassPage() {
                   <p className="text-sm text-muted-foreground">
                     {state.next.startTime}–{state.next.endTime}
                   </p>
+                  {nextReminder && (
+                    <Badge className="mt-1 gap-1 bg-accent text-accent-foreground" title={nextReminder.message}>
+                      <RotateCcw className="size-3" aria-hidden /> {nextReminder.badge}
+                    </Badge>
+                  )}
                 </div>
               </div>
               <p className="text-right text-sm text-muted-foreground">
@@ -305,7 +345,11 @@ export function CompassPage() {
                             className={cn("relative", loading && "disabled:opacity-100")}
                             disabled={pendingStatus !== undefined}
                             aria-busy={loading}
-                            onClick={() => mark.mutate({ blockId: b.id, status: s })}
+                            onClick={() =>
+                              s === "SKIPPED" && b.minimumVersion
+                                ? setAskMinimum(b)
+                                : mark.mutate({ blockId: b.id, status: s })
+                            }
                           >
                             {/* O rótulo fica transparente para o botão manter a largura e o nome acessível. */}
                             <span className={loading ? "opacity-0" : undefined}>{STATUS_LABEL[s]}</span>
@@ -319,6 +363,18 @@ export function CompassPage() {
               })}
             </CardContent>
           </Card>
+        )}
+
+        {askMinimum && (
+          <MinimumVersionDialog
+            block={askMinimum}
+            volume={data.settings.alertVolume}
+            onCancel={() => setAskMinimum(null)}
+            onMark={(status, viaMinimum) => {
+              mark.mutate({ blockId: askMinimum.id, status, viaMinimum });
+              setAskMinimum(null);
+            }}
+          />
         )}
 
         <QpLauncher settings={data.settings} qpToday={data.qpToday} onSessionChange={setQpActive} />
