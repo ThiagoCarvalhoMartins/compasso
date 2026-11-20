@@ -151,6 +151,14 @@ export const qpEndSchema = z.object({ actualSeconds: z.number().int().min(0).max
 /** Registro de energia: nota de 0 a 10 para a disposição de começar algo que exige foco. */
 export const energyCheckSchema = z.object({ score: z.number().int().min(0).max(10) });
 
+/** Pergunta focal do dia: resposta, bloco escolhido ou "Agora não". */
+export const dailyFocusSchema = z.object({
+  answer: z.string().trim().max(200).nullable().optional(),
+  blockId: z.string().nullable().optional(),
+  skipped: z.boolean().default(false),
+});
+export type DailyFocusInput = z.infer<typeof dailyFocusSchema>;
+
 export const rangeQuerySchema = z.object({ from: dateSchema, to: dateSchema });
 
 // ---------- Admin ----------

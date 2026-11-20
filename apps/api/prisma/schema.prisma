@@ -54,6 +54,7 @@ model User {
   blockLogs     BlockLog[]
   qpSessions    QpSession[]
   energyChecks  EnergyCheck[]
+  dailyFocus    DailyFocus[]
   refreshTokens RefreshToken[]
   activity      UserActivity[]
   auditActions  AuditLog[]     @relation("AuditAdmin")
@@ -122,6 +123,7 @@ model Block {
   user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   logs     BlockLog[]
+  focusDays DailyFocus[]
 
   @@index([userId, recurrence])
   @@index([userId, date])
@@ -161,6 +163,25 @@ model QpSession {
   @@index([userId, startedAt])
   @@index([startedAt])
   @@map("qp_sessions")
+}
+
+/// Pergunta focal do dia (A Única Coisa): a resposta e o bloco escolhido para ela.
+model DailyFocus {
+  userId    String   @map("user_id")
+  date      DateTime @db.Date
+  answer    String?  @db.VarChar(200)
+  blockId   String?  @map("block_id")
+  /// "Agora não": a pergunta não volta naquele dia
+  skipped   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  block Block? @relation(fields: [blockId], references: [id], onDelete: SetNull)
+
+  @@id([userId, date])
+  @@index([blockId])
+  @@map("daily_focus")
 }
 
 /// Registro de disposição mental (0 a 10) feito ao longo do dia, para mapear os horários de mais energia.

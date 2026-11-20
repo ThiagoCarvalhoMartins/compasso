@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma";
 import { dayBoundsUtc, fromDbDate, toDbDate, todayIn } from "../lib/time";
 import { userId } from "../middleware/auth";
 import { listUserBlocksWithCreation } from "../services/blocks";
+import { toDailyFocusDTO } from "./focus";
 
 export const compassRouter = Router();
 
@@ -22,7 +23,7 @@ compassRouter.get("/today", async (req, res) => {
   const { start, end } = dayBoundsUtc(date, user.timezone);
   const historyFrom = addDays(date, -MISS_LOOKBACK_DAYS);
 
-  const [{ blocks, createdOn }, logs, qpToday, settings] = await Promise.all([
+  const [{ blocks, createdOn }, logs, qpToday, settings, focus] = await Promise.all([
     listUserBlocksWithCreation(id, user.timezone),
     prisma.blockLog.findMany({
       where: { userId: id, date: { gte: toDbDate(historyFrom), lte: toDbDate(date) } },
@@ -30,6 +31,7 @@ compassRouter.get("/today", async (req, res) => {
     }),
     prisma.qpSession.count({ where: { userId: id, completed: true, startedAt: { gte: start, lt: end } } }),
     user.settings ?? prisma.userSettings.create({ data: { userId: id } }),
+    prisma.dailyFocus.findUnique({ where: { userId_date: { userId: id, date: toDbDate(date) } } }),
     // Atividade do dia para DAU/WAU/MAU e retenção (RF08).
     prisma.userActivity.upsert({
       where: { userId_date: { userId: id, date: toDbDate(date) } },
@@ -52,6 +54,7 @@ compassRouter.get("/today", async (req, res) => {
     }),
     settings: toSettingsDTO(settings),
     qpToday,
+    focus: focus ? toDailyFocusDTO(focus) : null,
   };
   res.json(body);
 });

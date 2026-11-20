@@ -11,6 +11,7 @@ export async function deleteAccount(id: string) {
     prisma.block.deleteMany({ where: { userId: id } }),
     prisma.category.deleteMany({ where: { userId: id } }),
     prisma.energyCheck.deleteMany({ where: { userId: id } }),
+    prisma.dailyFocus.deleteMany({ where: { userId: id } }),
     prisma.qpSession.updateMany({ where: { userId: id }, data: { userId: null } }),
     prisma.user.update({
       where: { id },

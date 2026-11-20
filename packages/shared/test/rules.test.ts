@@ -10,7 +10,9 @@ import {
   formatCountdown,
   passwordSchema,
   planAlerts,
+  peakHours,
   previousOccurrence,
+  suggestFocusSlot,
   seriesHasOccurrences,
   startOfWeek,
   summarizeBlockDays,
@@ -303,5 +305,40 @@ describe("nunca falhe duas vezes", () => {
     ]);
     // Sem os registros do dia anterior, não dá para saber se houve falha.
     expect(summarizeBlockDays(blocks, logs, ["2026-11-09"], { logsFrom: "2026-11-09" })[0].comebacks).toBe(0);
+  });
+});
+
+describe("pergunta focal: sugestão de horário pela energia", () => {
+  // 5 registros às 9h (média 9), 10h (8), 14h (4) e 20h (6): 20 registros no total.
+  const hours = Array.from({ length: 24 }, (_, hour) => {
+    const avg: Record<number, number> = { 9: 9, 10: 8, 14: 4, 20: 6 };
+    return { hour, average: avg[hour] ?? null, count: avg[hour] ? 5 : 0 };
+  });
+
+  it("escolhe o espaço livre de maior energia, sem sobrepor blocos", () => {
+    expect(suggestFocusSlot([], hours, 7 * 60)).toEqual({ startTime: "09:00", endTime: "10:30", average: 8.7 });
+    // 9h está ocupado: o melhor que sobra começa às 10h.
+    const busy = [{ startTime: "08:30", endTime: "10:00" }];
+    expect(suggestFocusSlot(busy, hours, 7 * 60)?.startTime).toBe("10:00");
+  });
+
+  it("não sugere horário que já passou e encurta quando não cabe 90 min", () => {
+    expect(suggestFocusSlot([], hours, 9 * 60 + 10)?.startTime).toBe("09:15");
+    const tight = [
+      { startTime: "07:00", endTime: "09:00" },
+      { startTime: "10:00", endTime: "23:00" },
+    ];
+    expect(suggestFocusSlot(tight, hours, 7 * 60)).toEqual({ startTime: "09:00", endTime: "10:00", average: 9 });
+  });
+
+  it("sem dados suficientes, sugere o próximo espaço livre", () => {
+    const few = hours.map((h) => ({ ...h, count: h.count ? 1 : 0 }));
+    expect(suggestFocusSlot([{ startTime: "08:00", endTime: "09:00" }], few, 8 * 60 + 5)).toEqual({
+      startTime: "09:00",
+      endTime: "10:30",
+      average: null,
+    });
+    expect(peakHours(few)).toEqual([]);
+    expect(peakHours(hours)).toEqual([9, 10]); // 20h (6) fica abaixo da média das horas (6,75)
   });
 });

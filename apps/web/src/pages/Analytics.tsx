@@ -9,9 +9,13 @@ import {
   type BlockSummaryDay,
   type CompassTodayDTO,
   type EnergyHour,
+  type FocusSummaryDay,
+  peakHours,
+  timeToMinutes,
   type QpSummaryDay,
 } from "@compasso/shared";
 import { Button, Card, CardContent, CardHeader, CardTitle, cn } from "@compasso/ui";
+import { useEnergyHours } from "../hooks/useEnergyHours";
 import { api } from "../lib/api";
 import { WEEKDAY_LABELS } from "../lib/time";
 
@@ -57,6 +61,14 @@ export function AnalyticsPage() {
     enabled: !!to,
   });
 
+  const { data: focusDays = [] } = useQuery({
+    queryKey: ["focus-summary", from, to],
+    queryFn: () => api.get<FocusSummaryDay[]>(`/focus/summary?from=${from}&to=${to}`),
+    enabled: !!to,
+  });
+  // Pico pelos últimos 30 dias, independente do período escolhido: é o mesmo usado para sugerir o horário.
+  const peak = peakHours(useEnergyHours(to));
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -80,6 +92,7 @@ export function AnalyticsPage() {
       </div>
 
       <BlockCompletionCard days={blockDays} period={period} today={to ?? ""} />
+      <FocusCard days={focusDays} period={period} peak={peak} today={to ?? ""} />
       <QpCard days={qpDays} period={period} />
       <EnergyCard hours={energyHours} period={period} />
     </div>
@@ -418,6 +431,71 @@ function EnergyCard({ hours, period }: { hours: EnergyHour[]; period: Period }) 
                 </li>
               ))}
             </ol>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * A Única Coisa: em quantos dias foi concluída e se o pico de energia ajuda. Dentro do pico = o bloco começa numa
+ * das 3 horas de maior energia. Hoje só entra depois de marcado, para o dia em andamento não baixar a taxa.
+ */
+function FocusCard({ days, period, peak, today }: { days: FocusSummaryDay[]; period: Period; peak: number[]; today: string }) {
+  const counted = days.filter((d) => d.date < today || d.status !== null);
+  const done = counted.filter((d) => d.status === "DONE").length;
+  const inPeak = counted.filter((d) => peak.includes(Math.floor(timeToMinutes(d.startTime) / 60)));
+  const outPeak = counted.filter((d) => !inPeak.includes(d));
+  const rate = (list: FocusSummaryDay[]) => percent(list.filter((d) => d.status === "DONE").length, list.length);
+  const peakLabel = [...peak].sort((a, b) => a - b).map((h) => `${h}h`).join(", ");
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>A Única Coisa</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          {counted.length
+            ? `Concluída em ${done} de ${counted.length} ${counted.length === 1 ? "dia" : "dias"} nos últimos ${period} dias`
+            : `Nenhuma Única Coisa nos últimos ${period} dias`}
+        </p>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {counted.length === 0 ? (
+          <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+            Responda à pergunta focal ao iniciar o dia, ou marque um bloco como “A Única Coisa” na Agenda.
+          </p>
+        ) : (
+          <>
+            <div className={cn("grid gap-3", peak.length ? "grid-cols-3" : "grid-cols-1 sm:grid-cols-3")}>
+              <div className="rounded-lg border p-3">
+                <p className="text-xs text-muted-foreground">Taxa de conclusão</p>
+                <p className="mt-1 text-2xl tabular-nums">{rate(counted)}%</p>
+              </div>
+              {peak.length > 0 && (
+                <>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">No pico de energia</p>
+                    <p className="mt-1 text-2xl tabular-nums">{inPeak.length ? `${rate(inPeak)}%` : "–"}</p>
+                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                      {inPeak.length} {inPeak.length === 1 ? "dia" : "dias"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-xs text-muted-foreground">Fora do pico</p>
+                    <p className="mt-1 text-2xl tabular-nums">{outPeak.length ? `${rate(outPeak)}%` : "–"}</p>
+                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                      {outPeak.length} {outPeak.length === 1 ? "dia" : "dias"}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {peak.length
+                ? `Seus horários de pico nos últimos 30 dias: ${peakLabel}.`
+                : "Ainda não há registros de energia suficientes para saber seus horários de pico."}
+            </p>
           </>
         )}
       </CardContent>
