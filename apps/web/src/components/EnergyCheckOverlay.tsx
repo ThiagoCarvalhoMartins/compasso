@@ -11,9 +11,10 @@ const SCORES = Array.from({ length: 11 }, (_, i) => i);
  * Registro de energia (0 a 10) na mesma camada de vidro da tela de boas-vindas. As respostas montam o
  * gráfico de energia por hora do Analytics. "Agora não" fecha sem registrar.
  */
-export function EnergyCheckOverlay({ onClosed }: { onClosed: () => void }) {
+export function EnergyCheckOverlay({ onClosed }: { onClosed: (recorded: boolean) => void }) {
   const qc = useQueryClient();
   const [score, setScore] = useState<number | null>(null);
+  const [recorded, setRecorded] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const firstRef = useRef<HTMLButtonElement>(null);
 
@@ -23,6 +24,7 @@ export function EnergyCheckOverlay({ onClosed }: { onClosed: () => void }) {
       toast.success(`Energia registrada: ${value} de 10.`);
       void qc.invalidateQueries({ queryKey: ["energy-summary"] });
       void qc.invalidateQueries({ queryKey: ["energy-last"] });
+      setRecorded(true);
       setLeaving(true);
     },
     onError: (e: Error) => {
@@ -34,7 +36,7 @@ export function EnergyCheckOverlay({ onClosed }: { onClosed: () => void }) {
   return (
     <GlassOverlay
       leaving={leaving}
-      onClosed={onClosed}
+      onClosed={() => onClosed(recorded)}
       initialFocus={firstRef}
       labelledBy="energy-title"
       describedBy="energy-question"
