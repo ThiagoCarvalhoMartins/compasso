@@ -223,254 +223,258 @@ export function CompassPage() {
     }
   };
 
+  // `welcome` fica sempre como 1º filho de um Fragment, igual aos retornos de carregamento e erro:
+  // mudar o pai remontaria o overlay e a boas-vindas reapareceria quando o dia terminasse de carregar.
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+    <>
       {welcome}
-      <div className="flex flex-col gap-5">
-        <div>
-          <p className="text-sm capitalize text-muted-foreground mb-1.5">{formatLongDate(data.date)}</p>
-          <h1 className="text-3xl md:text-4xl">Seu dia em ritmo</h1>
-        </div>
-
-        <FocusCard focus={focus} block={oneThing} secondOfDay={local.secondOfDay} onEdit={() => setFocusMode("edit")} />
-
-        {/* RF04.3 / RF04.5 */}
-        <Card className={endWarning ? "border-accent bg-accent/30" : undefined} aria-live="polite">
-          <CardHeader>
-            <p className="mb-1.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              {state.current ? "Agora" : "Tempo livre"}
-            </p>
-            {state.current ? (
-              <>
-                <CardTitle className="flex items-center gap-2 text-3xl md:text-4xl">
-                  {state.current.id === oneThing?.id && <Star className="size-6 fill-accent" aria-label="A Única Coisa" />}
-                  {state.current.title}
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {state.current.startTime}–{state.current.endTime} ·{" "}
-                  {humanDuration(timeToMinutes(state.current.endTime) - timeToMinutes(state.current.startTime))}
-                </p>
-                {currentReminder && (
-                  <p className="mt-2 flex gap-2 rounded-lg bg-accent/45 p-3 text-sm">
-                    <RotateCcw className="mt-0.5 size-4 shrink-0" aria-hidden />
-                    <span>
-                      <strong className="font-medium">{currentReminder.badge}.</strong> {currentReminder.message}
-                    </span>
-                  </p>
-                )}
-                {showMinimum && (
-                  <p
-                    className={cn(
-                      "mt-2 flex gap-2 text-sm",
-                      lowEnergy ? "rounded-lg bg-accent/45 p-3" : "text-muted-foreground",
-                    )}
-                  >
-                    <Sprout className="mt-0.5 size-4 shrink-0" aria-hidden />
-                    <span>
-                      {lowEnergy ? "Energia baixa agora? " : "Sem ânimo? "}Comece pela versão de 2 minutos:{" "}
-                      <strong className="font-medium">{state.current.minimumVersion}</strong>
-                    </span>
-                  </p>
-                )}
-              </>
-            ) : (
-              <CardTitle className="text-3xl">
-                {blocks.length ? "Nenhum bloco neste horário" : "Nenhum bloco para hoje"}
-              </CardTitle>
-            )}
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {state.current && (
-              <>
-                <Progress value={state.currentProgress} label="Progresso do bloco atual" />
-                <p className="text-lg">
-                  Faltam <span className="font-semibold tabular-nums">{formatCountdown(state.secondsToCurrentEnd!)}</span>
-                  {endWarning && <Badge className="ml-2 bg-accent">Reta final</Badge>}
-                </p>
-              </>
-            )}
-            {!blocks.length && (
-              <Button asChild variant="outline" className="self-start">
-                <Link to="/agenda">Montar minha agenda</Link>
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* RF04.4 */}
-        {state.next && (
-          <Card>
-            <CardContent className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <span className="size-3 rounded-full" style={{ background: state.next.color }} aria-hidden />
-                <div>
-                  <p className="text-xs uppercase tracking-widest text-muted-foreground">A seguir</p>
-                  <p className="font-medium">{state.next.title}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {state.next.startTime}–{state.next.endTime}
-                  </p>
-                  {nextReminder && (
-                    <Badge className="mt-1 gap-1 bg-accent text-accent-foreground" title={nextReminder.message}>
-                      <RotateCcw className="size-3" aria-hidden /> {nextReminder.badge}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-              <p className="text-right text-sm text-muted-foreground">
-                começa em
-                <br />
-                <span className="text-lg font-semibold tabular-nums text-foreground">{formatCountdown(state.secondsToNext!)}</span>
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* RF04.6 */}
-        {blocks.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between text-sm">
-              <span>Progresso do dia</span>
-              <span className="tabular-nums text-muted-foreground">{Math.round(state.dayProgress * 100)}%</span>
-            </div>
-            <Progress value={state.dayProgress} label="Progresso do dia" />
+      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+        <div className="flex flex-col gap-5">
+          <div>
+            <p className="text-sm capitalize text-muted-foreground mb-1.5">{formatLongDate(data.date)}</p>
+            <h1 className="text-3xl md:text-4xl">Seu dia em ritmo</h1>
           </div>
-        )}
 
-        <div className="flex flex-wrap gap-2">
-          {started && (
-            <Button variant="outline" onClick={toggleAlertsPaused} aria-pressed={!alertsOn}>
-              {alertsOn ? <Pause aria-hidden /> : <Play aria-hidden />}
-              {alertsOn ? "Pausar notificações" : "Retomar notificações"}
-            </Button>
-          )}
-          {/* RF04.10 */}
-          {alertsOn && (
-            <Button
-              variant="outline"
-              onClick={() => setMutedUntil(muted ? null : Date.now() + MUTE_MINUTES * 60_000)}
-              aria-pressed={muted}
-            >
-              {muted ? <BellOff aria-hidden /> : <BellRing aria-hidden />}
-              {muted
-                ? `Silenciado até ${new Date(mutedUntil!).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
-                : `Silenciar ${MUTE_MINUTES} min`}
-            </Button>
-          )}
-          {wake.supported && (
-            <Button
-              variant="outline"
-              onClick={wake.toggle}
-              aria-pressed={wake.active}
-              className={
-                wake.active
-                  ? "border-amber-300/60 bg-amber-50 hover:bg-amber-100/70 dark:border-amber-500/30 dark:bg-amber-500/10 dark:hover:bg-amber-500/15"
-                  : undefined
-              }
-            >
-              {wake.active ? (
-                <Lightbulb aria-hidden className="text-amber-500 fill-amber-300/40" />
-              ) : (
-                <LightbulbOff aria-hidden />
-              )}
-              {wake.active ? "Tela sempre ligada" : "Manter tela ligada"}
-            </Button>
-          )}
-        </div>
+          <FocusCard focus={focus} block={oneThing} secondOfDay={local.secondOfDay} onEdit={() => setFocusMode("edit")} />
 
-        {/* RF04.11 */}
-        {pendingReview.length > 0 && (
-          <Card>
+          {/* RF04.3 / RF04.5 */}
+          <Card className={endWarning ? "border-accent bg-accent/30" : undefined} aria-live="polite">
             <CardHeader>
-              <CardTitle>Como foram seus blocos?</CardTitle>
+              <p className="mb-1.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+                {state.current ? "Agora" : "Tempo livre"}
+              </p>
+              {state.current ? (
+                <>
+                  <CardTitle className="flex items-center gap-2 text-3xl md:text-4xl">
+                    {state.current.id === oneThing?.id && <Star className="size-6 fill-accent" aria-label="A Única Coisa" />}
+                    {state.current.title}
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {state.current.startTime}–{state.current.endTime} ·{" "}
+                    {humanDuration(timeToMinutes(state.current.endTime) - timeToMinutes(state.current.startTime))}
+                  </p>
+                  {currentReminder && (
+                    <p className="mt-2 flex gap-2 rounded-lg bg-accent/45 p-3 text-sm">
+                      <RotateCcw className="mt-0.5 size-4 shrink-0" aria-hidden />
+                      <span>
+                        <strong className="font-medium">{currentReminder.badge}.</strong> {currentReminder.message}
+                      </span>
+                    </p>
+                  )}
+                  {showMinimum && (
+                    <p
+                      className={cn(
+                        "mt-2 flex gap-2 text-sm",
+                        lowEnergy ? "rounded-lg bg-accent/45 p-3" : "text-muted-foreground",
+                      )}
+                    >
+                      <Sprout className="mt-0.5 size-4 shrink-0" aria-hidden />
+                      <span>
+                        {lowEnergy ? "Energia baixa agora? " : "Sem ânimo? "}Comece pela versão de 2 minutos:{" "}
+                        <strong className="font-medium">{state.current.minimumVersion}</strong>
+                      </span>
+                    </p>
+                  )}
+                </>
+              ) : (
+                <CardTitle className="text-3xl">
+                  {blocks.length ? "Nenhum bloco neste horário" : "Nenhum bloco para hoje"}
+                </CardTitle>
+              )}
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              {pendingReview.map((b) => {
-                const pendingStatus = pendingMarks.find((m) => m.blockId === b.id)?.status;
-                return (
-                  <div key={b.id} className="flex flex-col gap-2 border-b pb-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-sm">
-                      <strong className="font-medium">{b.title}</strong>{" "}
-                      <span className="text-muted-foreground">
-                        {b.startTime}–{b.endTime}
-                      </span>
-                    </span>
-                    <div className="flex gap-1.5">
-                      {(["DONE", "PARTIAL", "SKIPPED"] as const).map((s) => {
-                        const loading = pendingStatus === s;
-                        return (
-                          <Button
-                            key={s}
-                            size="sm"
-                            variant={s === "DONE" ? "default" : "outline"}
-                            className={cn("relative", loading && "disabled:opacity-100")}
-                            disabled={pendingStatus !== undefined}
-                            aria-busy={loading}
-                            onClick={() =>
-                              s === "SKIPPED" && b.minimumVersion
-                                ? setAskMinimum(b)
-                                : mark.mutate({ blockId: b.id, status: s })
-                            }
-                          >
-                            {/* O rótulo fica transparente para o botão manter a largura e o nome acessível. */}
-                            <span className={loading ? "opacity-0" : undefined}>{STATUS_LABEL[s]}</span>
-                            {loading && <Spinner className="absolute inset-0 m-auto" />}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+              {state.current && (
+                <>
+                  <Progress value={state.currentProgress} label="Progresso do bloco atual" />
+                  <p className="text-lg">
+                    Faltam <span className="font-semibold tabular-nums">{formatCountdown(state.secondsToCurrentEnd!)}</span>
+                    {endWarning && <Badge className="ml-2 bg-accent">Reta final</Badge>}
+                  </p>
+                </>
+              )}
+              {!blocks.length && (
+                <Button asChild variant="outline" className="self-start">
+                  <Link to="/agenda">Montar minha agenda</Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
-        )}
 
-        <BlockFormDialog
-          open={!!focusDraft}
-          onOpenChange={(open) => !open && setFocusDraft(null)}
-          draft={focusDraft ?? NO_DRAFT}
-          defaultDate={data.date}
-          onSaved={(block) => linkFocusBlock(block.id)}
-        />
+          {/* RF04.4 */}
+          {state.next && (
+            <Card>
+              <CardContent className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="size-3 rounded-full" style={{ background: state.next.color }} aria-hidden />
+                  <div>
+                    <p className="text-xs uppercase tracking-widest text-muted-foreground">A seguir</p>
+                    <p className="font-medium">{state.next.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {state.next.startTime}–{state.next.endTime}
+                    </p>
+                    {nextReminder && (
+                      <Badge className="mt-1 gap-1 bg-accent text-accent-foreground" title={nextReminder.message}>
+                        <RotateCcw className="size-3" aria-hidden /> {nextReminder.badge}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <p className="text-right text-sm text-muted-foreground">
+                  começa em
+                  <br />
+                  <span className="text-lg font-semibold tabular-nums text-foreground">{formatCountdown(state.secondsToNext!)}</span>
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
-        {askMinimum && (
-          <MinimumVersionDialog
-            block={askMinimum}
-            volume={data.settings.alertVolume}
-            onCancel={() => setAskMinimum(null)}
-            onMark={(status, viaMinimum) => {
-              mark.mutate({ blockId: askMinimum.id, status, viaMinimum });
-              setAskMinimum(null);
-            }}
+          {/* RF04.6 */}
+          {blocks.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between text-sm">
+                <span>Progresso do dia</span>
+                <span className="tabular-nums text-muted-foreground">{Math.round(state.dayProgress * 100)}%</span>
+              </div>
+              <Progress value={state.dayProgress} label="Progresso do dia" />
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            {started && (
+              <Button variant="outline" onClick={toggleAlertsPaused} aria-pressed={!alertsOn}>
+                {alertsOn ? <Pause aria-hidden /> : <Play aria-hidden />}
+                {alertsOn ? "Pausar notificações" : "Retomar notificações"}
+              </Button>
+            )}
+            {/* RF04.10 */}
+            {alertsOn && (
+              <Button
+                variant="outline"
+                onClick={() => setMutedUntil(muted ? null : Date.now() + MUTE_MINUTES * 60_000)}
+                aria-pressed={muted}
+              >
+                {muted ? <BellOff aria-hidden /> : <BellRing aria-hidden />}
+                {muted
+                  ? `Silenciado até ${new Date(mutedUntil!).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`
+                  : `Silenciar ${MUTE_MINUTES} min`}
+              </Button>
+            )}
+            {wake.supported && (
+              <Button
+                variant="outline"
+                onClick={wake.toggle}
+                aria-pressed={wake.active}
+                className={
+                  wake.active
+                    ? "border-amber-300/60 bg-amber-50 hover:bg-amber-100/70 dark:border-amber-500/30 dark:bg-amber-500/10 dark:hover:bg-amber-500/15"
+                    : undefined
+                }
+              >
+                {wake.active ? (
+                  <Lightbulb aria-hidden className="text-amber-500 fill-amber-300/40" />
+                ) : (
+                  <LightbulbOff aria-hidden />
+                )}
+                {wake.active ? "Tela sempre ligada" : "Manter tela ligada"}
+              </Button>
+            )}
+          </div>
+
+          {/* RF04.11 */}
+          {pendingReview.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Como foram seus blocos?</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                {pendingReview.map((b) => {
+                  const pendingStatus = pendingMarks.find((m) => m.blockId === b.id)?.status;
+                  return (
+                    <div key={b.id} className="flex flex-col gap-2 border-b pb-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
+                      <span className="text-sm">
+                        <strong className="font-medium">{b.title}</strong>{" "}
+                        <span className="text-muted-foreground">
+                          {b.startTime}–{b.endTime}
+                        </span>
+                      </span>
+                      <div className="flex gap-1.5">
+                        {(["DONE", "PARTIAL", "SKIPPED"] as const).map((s) => {
+                          const loading = pendingStatus === s;
+                          return (
+                            <Button
+                              key={s}
+                              size="sm"
+                              variant={s === "DONE" ? "default" : "outline"}
+                              className={cn("relative", loading && "disabled:opacity-100")}
+                              disabled={pendingStatus !== undefined}
+                              aria-busy={loading}
+                              onClick={() =>
+                                s === "SKIPPED" && b.minimumVersion
+                                  ? setAskMinimum(b)
+                                  : mark.mutate({ blockId: b.id, status: s })
+                              }
+                            >
+                              {/* O rótulo fica transparente para o botão manter a largura e o nome acessível. */}
+                              <span className={loading ? "opacity-0" : undefined}>{STATUS_LABEL[s]}</span>
+                              {loading && <Spinner className="absolute inset-0 m-auto" />}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          <BlockFormDialog
+            open={!!focusDraft}
+            onOpenChange={(open) => !open && setFocusDraft(null)}
+            draft={focusDraft ?? NO_DRAFT}
+            defaultDate={data.date}
+            onSaved={(block) => linkFocusBlock(block.id)}
           />
-        )}
 
-        <QpLauncher settings={data.settings} qpToday={data.qpToday} onSessionChange={setQpActive} />
-        <EnergyLauncher lastAt={energy.lastAt} now={now} timezone={tz} onStart={energy.openManual} />
+          {askMinimum && (
+            <MinimumVersionDialog
+              block={askMinimum}
+              volume={data.settings.alertVolume}
+              onCancel={() => setAskMinimum(null)}
+              onMark={(status, viaMinimum) => {
+                mark.mutate({ blockId: askMinimum.id, status, viaMinimum });
+                setAskMinimum(null);
+              }}
+            />
+          )}
+
+          <QpLauncher settings={data.settings} qpToday={data.qpToday} onSessionChange={setQpActive} />
+          <EnergyLauncher lastAt={energy.lastAt} now={now} timezone={tz} onStart={energy.openManual} />
+        </div>
+
+        <aside className="flex flex-col gap-3">
+          <h2 className="text-xl">Hoje</h2>
+          <Timeline
+            blocks={blocks}
+            secondOfDay={local.secondOfDay}
+            currentId={state.current?.id ?? null}
+            oneThingId={oneThing?.id ?? null}
+          />
+          {blocks.some((b) => b.log) && (
+            <ul className="flex flex-wrap gap-1.5 text-xs">
+              {blocks
+                .filter((b) => b.log)
+                .map((b) => (
+                  <li key={b.id}>
+                    <Badge className={STATUS_CHIP[b.log!]}>
+                      {b.title}: {STATUS_LABEL[b.log!]}
+                    </Badge>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </aside>
       </div>
-
-      <aside className="flex flex-col gap-3">
-        <h2 className="text-xl">Hoje</h2>
-        <Timeline
-          blocks={blocks}
-          secondOfDay={local.secondOfDay}
-          currentId={state.current?.id ?? null}
-          oneThingId={oneThing?.id ?? null}
-        />
-        {blocks.some((b) => b.log) && (
-          <ul className="flex flex-wrap gap-1.5 text-xs">
-            {blocks
-              .filter((b) => b.log)
-              .map((b) => (
-                <li key={b.id}>
-                  <Badge className={STATUS_CHIP[b.log!]}>
-                    {b.title}: {STATUS_LABEL[b.log!]}
-                  </Badge>
-                </li>
-              ))}
-          </ul>
-        )}
-      </aside>
-    </div>
+    </>
   );
 }
