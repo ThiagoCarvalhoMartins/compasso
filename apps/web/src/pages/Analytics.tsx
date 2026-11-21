@@ -449,6 +449,17 @@ function FocusCard({ days, period, peak, today }: { days: FocusSummaryDay[]; per
   const outPeak = counted.filter((d) => !inPeak.includes(d));
   const rate = (list: FocusSummaryDay[]) => percent(list.filter((d) => d.status === "DONE").length, list.length);
   const peakLabel = [...peak].sort((a, b) => a - b).map((h) => `${h}h`).join(", ");
+  const one = counted.length === 1;
+  const outcome =
+    done === 0
+      ? one
+        ? ", mas não a concluiu"
+        : ", mas ainda não concluiu nenhuma"
+      : done === counted.length
+        ? one
+          ? " e a concluiu"
+          : " e concluiu todas"
+        : ` e concluiu ${done} delas`;
 
   return (
     <Card>
@@ -456,8 +467,8 @@ function FocusCard({ days, period, peak, today }: { days: FocusSummaryDay[]; per
         <CardTitle>A Única Coisa</CardTitle>
         <p className="text-sm text-muted-foreground">
           {counted.length
-            ? `Concluída em ${done} de ${counted.length} ${counted.length === 1 ? "dia" : "dias"} nos últimos ${period} dias`
-            : `Nenhuma Única Coisa nos últimos ${period} dias`}
+            ? `Você teve uma Única Coisa definida em ${counted.length} dos últimos ${period} dias${outcome}.`
+            : `Você não teve uma Única Coisa definida nos últimos ${period} dias.`}
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
@@ -492,6 +503,7 @@ function FocusCard({ days, period, peak, today }: { days: FocusSummaryDay[]; per
               )}
             </div>
             <p className="text-xs text-muted-foreground">
+              Conta o bloco escolhido na pergunta focal ou, sem resposta, o bloco marcado com estrela na Agenda.{" "}
               {peak.length
                 ? `Seus horários de pico nos últimos 30 dias: ${peakLabel}.`
                 : "Ainda não há registros de energia suficientes para saber seus horários de pico."}
