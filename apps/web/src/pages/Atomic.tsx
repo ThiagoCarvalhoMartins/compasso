@@ -261,7 +261,12 @@ function HabitCard({
       <CardContent className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-balance font-serif text-2xl leading-tight">{habit.title}</p>
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <p className="text-balance font-serif text-2xl leading-tight">{habit.title}</p>
+              <span className="shrink-0 rounded-full bg-primary/40 px-2 py-0.5 text-xs font-medium tabular-nums">
+                {day > HABIT_DAYS ? `${day} dias` : `dia ${day} de ${HABIT_DAYS}`}
+              </span>
+            </div>
             {habit.identity && (
               <p className="mt-1 text-sm text-muted-foreground">
                 <Fingerprint className="mr-1 inline size-3.5" aria-hidden />
@@ -299,14 +304,9 @@ function HabitCard({
         )}
 
         <div className="flex flex-col gap-1.5">
-          <div className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">
-            <span>
-              <span className="font-medium text-foreground">{phase.title}</span> · {phase.text}
-            </span>
-            <span className="shrink-0 tabular-nums">
-              {day > HABIT_DAYS ? `${day} dias` : `dia ${day} de ${HABIT_DAYS}`}
-            </span>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{phase.title}</span> · {phase.text}
+          </p>
           <Progress value={day / HABIT_DAYS} label={`Dia ${day} de ${HABIT_DAYS}`} />
         </div>
       </CardContent>
