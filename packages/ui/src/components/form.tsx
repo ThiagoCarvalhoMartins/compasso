@@ -62,7 +62,7 @@ export function Field({
   label: string;
   htmlFor: string;
   error?: string;
-  hint?: string;
+  hint?: React.ReactNode;
   children: React.ReactElement<{ "aria-invalid"?: boolean; "aria-describedby"?: string }>;
   className?: string;
 }) {

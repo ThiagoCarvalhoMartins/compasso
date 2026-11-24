@@ -50,6 +50,7 @@ export function normalizeBlock(input: BlockInput, current?: BlockDTO): Omit<Bloc
     endTime: input.endTime,
     isOneThing: input.isOneThing,
     minimumVersion: input.minimumVersion || null,
+    microHabitId: input.microHabitId || null,
   };
 }
 
@@ -92,7 +93,15 @@ export function toBlockData(block: Omit<BlockDTO, "id">) {
     endTime: toDbTime(block.endTime),
     isOneThing: block.isOneThing,
     minimumVersion: block.minimumVersion,
+    microHabitId: block.microHabitId,
   } satisfies Omit<Prisma.BlockUncheckedCreateInput, "userId">;
+}
+
+/** O micro-hábito empilhado precisa ser do próprio usuário. */
+export async function assertMicroHabit(userId: string, microHabitId: string | null) {
+  if (!microHabitId) return;
+  const habit = await prisma.microHabit.findFirst({ where: { id: microHabitId, userId }, select: { id: true } });
+  if (!habit) throw badRequest("Micro-hábito inválido.", "INVALID_MICRO_HABIT");
 }
 
 /** A categoria precisa ser padrão do sistema ou do próprio usuário. */

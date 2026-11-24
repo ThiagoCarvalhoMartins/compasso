@@ -40,6 +40,7 @@ export const toBlockDTO = (b: Block): BlockDTO => ({
   color: b.color,
   isOneThing: b.isOneThing,
   minimumVersion: b.minimumVersion,
+  microHabitId: b.microHabitId,
 });
 
 export const toCategoryDTO = (c: Category): CategoryDTO => ({

@@ -24,6 +24,7 @@ import { userId } from "../middleware/auth";
 import {
   assertBlockAllowed,
   assertCategory,
+  assertMicroHabit,
   listUserBlocks,
   listUserBlocksWithCreation,
   normalizeBlock,
@@ -91,6 +92,7 @@ blocksRouter.post("/", async (req, res) => {
   const id = userId(req);
   const block = normalizeBlock(parse(blockInputSchema, req.body));
   await assertCategory(id, block.categoryId);
+  await assertMicroHabit(id, block.microHabitId);
   await assertBlockAllowed(id, await userTimezone(id), block, { checkPastDate: true });
   const created = await prisma.block.create({ data: { ...toBlockData(block), userId: id } });
   res.status(201).json(toBlockDTO(created));
@@ -126,6 +128,7 @@ blocksRouter.patch("/:id", async (req, res) => {
       : { ...edited, recurrence: "ONCE" as const, date, repeatWeekdays: [], startsOn: null, endsOn: null, excludedDates: [] };
     if (!seriesHasOccurrences(piece)) throw badRequest(t("block.noOccurrences"), "NO_OCCURRENCES");
     await assertCategory(id, piece.categoryId);
+    await assertMicroHabit(id, piece.microHabitId);
 
     const restRemains = seriesHasOccurrences(rest);
     const others = (await listUserBlocks(id)).filter((b) => b.id !== before.id);
@@ -165,6 +168,7 @@ blocksRouter.patch("/:id", async (req, res) => {
   const block = normalizeBlock(input, before);
   if (!seriesHasOccurrences(block)) throw badRequest(t("block.noOccurrences"), "NO_OCCURRENCES");
   await assertCategory(id, block.categoryId);
+  await assertMicroHabit(id, block.microHabitId);
   const dateChanged = block.recurrence === "ONCE" && block.date !== toBlockDTO(current).date;
   await assertBlockAllowed(id, await userTimezone(id), { ...block, id: current.id }, { checkPastDate: dateChanged });
   const updated = await prisma.block.update({ where: { id: current.id }, data: toBlockData(block) });

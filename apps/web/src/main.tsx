@@ -8,6 +8,7 @@ import { queryClient } from "./lib/api";
 import { AuthProvider, useAuth } from "./lib/auth";
 import { AgendaPage } from "./pages/Agenda";
 import { AnalyticsPage } from "./pages/Analytics";
+import { AtomicPage } from "./pages/Atomic";
 import {
   ForgotPasswordPage,
   LoginPage,
@@ -46,6 +47,7 @@ createRoot(document.getElementById("root")!).render(
             <Route path="/privacidade" element={<PrivacyPage />} />
             <Route element={<Protected><Layout /></Protected>}>
               <Route index element={<CompassPage />} />
+              <Route path="atomic" element={<AtomicPage />} />
               <Route path="agenda" element={<AgendaPage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="qp" element={<Navigate to="/analytics" replace />} />

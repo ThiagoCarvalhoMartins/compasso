@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { Check, Trash2 } from "lucide-react";
 import {
   BLOCK_COLORS,
@@ -13,6 +14,7 @@ import {
   type BlockScope,
   type BlockDTO,
   type CategoryDTO,
+  type MicroHabitDTO,
 } from "@compasso/shared";
 import {
   ApiError,
@@ -42,6 +44,7 @@ import { WEEKDAY_LABELS, formatShortDate, todayInBrowser } from "../lib/time";
 
 /** O Select do Radix não aceita item com valor vazio; este valor representa a opção "Sem categoria". */
 const NO_CATEGORY = "__none__";
+const NO_HABIT = "__none__";
 
 interface FormValues {
   title: string;
@@ -56,6 +59,7 @@ interface FormValues {
   repeatWeekdays: number[];
   isOneThing: boolean;
   minimumVersion: string;
+  microHabitId: string;
 }
 
 export type BlockDraft = Partial<BlockDTO> & {
@@ -77,6 +81,7 @@ const toForm = (draft: BlockDraft, defaultDate: string): FormValues => ({
   repeatWeekdays: draft.repeatWeekdays?.length ? draft.repeatWeekdays : [1, 2, 3, 4, 5],
   isOneThing: draft.isOneThing ?? false,
   minimumVersion: draft.minimumVersion ?? "",
+  microHabitId: draft.microHabitId ?? "",
 });
 
 /** RF03.1–RF03.3, RF03.6 — criar, editar, duplicar e excluir blocos. */
@@ -100,6 +105,11 @@ export function BlockFormDialog({
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
     queryFn: () => api.get<CategoryDTO[]>("/categories"),
+  });
+  const { data: habits = [] } = useQuery({
+    queryKey: ["micro-habits"],
+    queryFn: () => api.get<MicroHabitDTO[]>("/micro-habits"),
+    enabled: open,
   });
   const { register, control, handleSubmit, watch, setValue, reset } = useForm<FormValues>({
     defaultValues: toForm(draft, defaultDate),
@@ -140,6 +150,7 @@ export function BlockFormDialog({
   const done = (message: string) => {
     qc.invalidateQueries({ queryKey: ["blocks"] });
     qc.invalidateQueries({ queryKey: ["compass"] });
+    qc.invalidateQueries({ queryKey: ["micro-habits"] });
     toast.success(message);
     onOpenChange(false);
   };
@@ -200,6 +211,7 @@ export function BlockFormDialog({
       endTime: v.endTime,
       isOneThing: v.isOneThing,
       minimumVersion: v.minimumVersion.trim() || null,
+      microHabitId: v.microHabitId || null,
     };
     // Mesmo schema Zod da API: erros aparecem antes de enviar.
     const parsed = blockInputSchema.safeParse(payload);
@@ -392,6 +404,41 @@ export function BlockFormDialog({
               placeholder="Ex.: ler 1 página, calçar o tênis"
               {...register("minimumVersion")}
             />
+          </Field>
+
+          <Field
+            label="Empilhar micro-hábito (opcional)"
+            htmlFor="microHabitId"
+            hint={
+              habits.length ? (
+                "Depois deste bloco, vou… O alerta de fim do bloco lembra do que vem em seguida."
+              ) : (
+                <>
+                  Você ainda não tem micro-hábitos.{" "}
+                  <Link to="/atomic" className="underline underline-offset-2" onClick={() => onOpenChange(false)}>
+                    Criar em Atomic
+                  </Link>
+                </>
+              )
+            }
+          >
+            <Select
+              value={watch("microHabitId") || NO_HABIT}
+              onValueChange={(v) => setValue("microHabitId", v === NO_HABIT ? "" : v)}
+              disabled={!habits.length && !watch("microHabitId")}
+            >
+              <SelectTrigger id="microHabitId">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_HABIT}>Nenhum</SelectItem>
+                {habits.map((h) => (
+                  <SelectItem key={h.id} value={h.id}>
+                    {h.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Field>
 
           <label className="flex items-start gap-2 rounded-lg bg-accent/40 p-3 text-sm">

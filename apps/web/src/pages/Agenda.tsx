@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, ClipboardCopy, Copy, Plus, Repeat, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, ClipboardCopy, Copy, Layers, Plus, Repeat, Star } from "lucide-react";
 import { addDays, blocksForDate, startOfWeek, weekdayOf, type BlockDTO } from "@compasso/shared";
 import {
   Button,
@@ -122,6 +122,7 @@ export function AgendaPage() {
                     <div className="mt-0.5 flex items-center gap-1 text-xs opacity-75">
                       {b.startTime}–{b.endTime}
                       {b.recurrence === "REPEAT" && <Repeat className="size-3" aria-label="Recorrente" />}
+                      {b.microHabitId && <Layers className="size-3" aria-label="Com micro-hábito empilhado" />}
                     </div>
                   </button>
                   <button

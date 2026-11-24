@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useMutationState, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { BellOff, BellRing, Lightbulb, LightbulbOff, Pause, Play, RotateCcw, Sprout, Star } from "lucide-react";
+import { BellOff, BellRing, Layers, Lightbulb, LightbulbOff, Pause, Play, RotateCcw, Sprout, Star } from "lucide-react";
 import {
   compassState,
   suggestFocusSlot,
@@ -9,6 +9,7 @@ import {
   timeToMinutes,
   type BlockLogStatus,
   type CompassTodayDTO,
+  type MicroHabitDTO,
 } from "@compasso/shared";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, cn, Progress, Spinner, toast } from "@compasso/ui";
 import { BlockFormDialog, type BlockDraft } from "../components/BlockFormDialog";
@@ -50,6 +51,11 @@ export function CompassPage() {
     queryKey: ["compass"],
     queryFn: () => api.get<CompassTodayDTO>("/compass/today"),
   });
+  const { data: habits } = useQuery({
+    queryKey: ["micro-habits"],
+    queryFn: () => api.get<MicroHabitDTO[]>("/micro-habits"),
+  });
+  const habitTitles = useMemo(() => new Map((habits ?? []).map((h) => [h.id, h.title])), [habits]);
   const now = useNow();
   // Lembrado entre recarregamentos: o usuário só precisa tocar em "Iniciar meu dia" uma vez.
   const [alertsPref, setAlertsPref] = useState<AlertsPreference>(readAlertsPreference);
@@ -131,6 +137,7 @@ export function CompassPage() {
     settings: data?.settings ?? { alertsEnabled: false, alertSound: "sino", alertVolume: 0.7, endAlertMinutes: 5, qpDurationSeconds: null },
     started: alertsOn,
     mutedUntil,
+    habits: habitTitles,
   });
 
   const mark = useMutation({
@@ -205,6 +212,7 @@ export function CompassPage() {
   // Versão de 2 minutos no bloco atual: discreta sempre; em destaque quando a energia registrada está baixa.
   const lowEnergy = isLowEnergy(energy.lastScore, energy.lastAt, now);
   const showMinimum = !!state.current?.minimumVersion && !state.current.log && !currentReminder;
+  const nextHabit = state.current?.microHabitId ? habitTitles.get(state.current.microHabitId) : undefined;
 
   const setAlerts = (value: Exclude<AlertsPreference, null>) => {
     saveAlertsPreference(value);
@@ -272,6 +280,14 @@ export function CompassPage() {
                       <span>
                         {lowEnergy ? "Energia baixa agora? " : "Sem ânimo? "}Comece pela versão de 2 minutos:{" "}
                         <strong className="font-medium">{state.current.minimumVersion}</strong>
+                      </span>
+                    </p>
+                  )}
+                  {nextHabit && (
+                    <p className={cn("mt-2 flex gap-2 text-sm", endWarning ? "rounded-lg bg-primary/35 p-3" : "text-muted-foreground")}>
+                      <Layers className="mt-0.5 size-4 shrink-0" aria-hidden />
+                      <span>
+                        Ao terminar: <strong className="font-medium">{nextHabit}</strong>
                       </span>
                     </p>
                   )}
