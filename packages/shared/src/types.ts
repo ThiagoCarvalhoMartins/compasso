@@ -23,6 +23,19 @@ export interface BlockDTO {
   isOneThing: boolean;
   /** Versão de 2 minutos: o mínimo que já conta como não ter desistido (Hábitos Atômicos). */
   minimumVersion: string | null;
+  /** Empilhamento de hábitos: micro-hábito feito logo depois do bloco. */
+  microHabitId: string | null;
+}
+
+/** Micro-hábito (Hábitos Atômicos), com os blocos em que está empilhado. */
+export interface MicroHabitDTO {
+  id: string;
+  title: string;
+  /** "Sou uma pessoa que…" */
+  identity: string | null;
+  /** YYYY-MM-DD (fuso do usuário) em que foi criado. */
+  createdOn: string;
+  blockIds: string[];
 }
 
 export interface BlockLogDTO {

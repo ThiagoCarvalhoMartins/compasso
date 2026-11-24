@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
-import { CalendarDays, ChartColumn, Compass, LogOut, Moon, UserRound } from "lucide-react";
+import { Atom, CalendarDays, ChartColumn, Compass, LogOut, Moon, UserRound } from "lucide-react";
 import {
   Avatar,
   DropdownMenu,
@@ -15,6 +15,7 @@ import { ScrollToTop } from "./ScrollToTop";
 
 const links = [
   { to: "/", label: "Compasso", icon: Compass, end: true },
+  { to: "/atomic", label: "Atomic", icon: Atom },
   { to: "/agenda", label: "Agenda", icon: CalendarDays },
   { to: "/analytics", label: "Analytics", icon: ChartColumn },
   { to: "/perfil", label: "Perfil", icon: UserRound },
@@ -81,7 +82,7 @@ export function Layout() {
       <ScrollToTop />
 
       {/* Navegação inferior no celular */}
-      <nav aria-label="Principal" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
+      <nav aria-label="Principal" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
         {links.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}

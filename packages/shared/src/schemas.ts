@@ -101,6 +101,7 @@ export const blockInputSchema = z
     endTime: timeSchema,
     isOneThing: z.boolean().default(false),
     minimumVersion: z.string().trim().max(120).nullable().optional(),
+    microHabitId: z.string().nullable().optional(),
   })
   .superRefine((value, ctx) => {
     if (isValidTime(value.startTime) && isValidTime(value.endTime)) {
@@ -124,6 +125,13 @@ export const blockInputSchema = z
     }
   });
 export type BlockInput = z.infer<typeof blockInputSchema>;
+
+/** Micro-hábito: a ação pequena e, opcionalmente, a identidade que ela reforça. */
+export const microHabitSchema = z.object({
+  title: z.string().trim().min(1, t("validation.required")).max(120),
+  identity: z.string().trim().max(120).nullable().optional(),
+});
+export type MicroHabitInput = z.infer<typeof microHabitSchema>;
 
 export const copyDaySchema = z.object({ fromDate: dateSchema, toDate: dateSchema });
 

@@ -16,6 +16,7 @@ import { compassRouter } from "./routes/compass";
 import { energyRouter } from "./routes/energy";
 import { focusRouter } from "./routes/focus";
 import { meRouter } from "./routes/me";
+import { microHabitsRouter } from "./routes/microHabits";
 import { qpRouter } from "./routes/qp";
 
 export function createApp() {
@@ -48,6 +49,7 @@ export function createApp() {
   v1.use("/qp-sessions", requireAuth, qpRouter);
   v1.use("/energy-checks", requireAuth, energyRouter);
   v1.use("/focus", requireAuth, focusRouter);
+  v1.use("/micro-habits", requireAuth, microHabitsRouter);
   app.use("/api/v1", v1);
 
   app.use(notFoundHandler);

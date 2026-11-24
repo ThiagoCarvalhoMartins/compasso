@@ -9,6 +9,7 @@ export async function deleteAccount(id: string) {
   const user = await prisma.user.findUniqueOrThrow({ where: { id } });
   await prisma.$transaction([
     prisma.block.deleteMany({ where: { userId: id } }),
+    prisma.microHabit.deleteMany({ where: { userId: id } }),
     prisma.category.deleteMany({ where: { userId: id } }),
     prisma.energyCheck.deleteMany({ where: { userId: id } }),
     prisma.dailyFocus.deleteMany({ where: { userId: id } }),

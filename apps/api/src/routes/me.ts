@@ -40,7 +40,7 @@ meRouter.patch("/", async (req, res) => {
 // RF02.4 / RNF07 — exportação dos próprios dados (LGPD)
 meRouter.get("/export", async (req, res) => {
   const id = userId(req);
-  const [user, settings, blocks, logs, qp, categories, energy, focus] = await Promise.all([
+  const [user, settings, blocks, logs, qp, categories, energy, focus, habits] = await Promise.all([
     prisma.user.findUniqueOrThrow({ where: { id } }),
     getSettings(id),
     prisma.block.findMany({ where: { userId: id } }),
@@ -49,6 +49,7 @@ meRouter.get("/export", async (req, res) => {
     prisma.category.findMany({ where: { userId: id } }),
     prisma.energyCheck.findMany({ where: { userId: id }, orderBy: { recordedAt: "asc" } }),
     prisma.dailyFocus.findMany({ where: { userId: id }, orderBy: { date: "asc" } }),
+    prisma.microHabit.findMany({ where: { userId: id }, orderBy: { createdAt: "asc" } }),
   ]);
   res.setHeader("Content-Disposition", 'attachment; filename="compasso-meus-dados.json"');
   res.json({
@@ -67,6 +68,7 @@ meRouter.get("/export", async (req, res) => {
     qpSessions: qp.map(({ userId: _u, ...s }) => s),
     energyChecks: energy.map((e) => ({ score: e.score, recordedAt: e.recordedAt })),
     dailyFocus: focus.map(toDailyFocusDTO),
+    microHabits: habits.map((h) => ({ id: h.id, title: h.title, identity: h.identity, createdAt: h.createdAt })),
   });
 });
 

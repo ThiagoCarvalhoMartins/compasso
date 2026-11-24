@@ -55,6 +55,7 @@ model User {
   qpSessions    QpSession[]
   energyChecks  EnergyCheck[]
   dailyFocus    DailyFocus[]
+  microHabits   MicroHabit[]
   refreshTokens RefreshToken[]
   activity      UserActivity[]
   auditActions  AuditLog[]     @relation("AuditAdmin")
@@ -117,11 +118,14 @@ model Block {
   isOneThing     Boolean    @default(false) @map("is_one_thing")
   /// Versão de 2 minutos: o mínimo que já conta como não ter desistido
   minimumVersion String?    @map("minimum_version") @db.VarChar(120)
+  /// Empilhamento de hábitos: micro-hábito feito logo depois do bloco
+  microHabitId   String?    @map("micro_habit_id")
   createdAt      DateTime   @default(now()) @map("created_at")
   updatedAt      DateTime   @updatedAt @map("updated_at")
 
   user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   category Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  microHabit MicroHabit? @relation(fields: [microHabitId], references: [id], onDelete: SetNull)
   logs     BlockLog[]
   focusDays DailyFocus[]
 
@@ -163,6 +167,23 @@ model QpSession {
   @@index([userId, startedAt])
   @@index([startedAt])
   @@map("qp_sessions")
+}
+
+/// Micro-hábito (Hábitos Atômicos): uma ação pequena, empilhada depois de um ou mais blocos.
+model MicroHabit {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  title     String   @db.VarChar(120)
+  /// "Sou uma pessoa que…": a identidade que cada repetição reforça
+  identity  String?  @db.VarChar(120)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blocks Block[]
+
+  @@index([userId])
+  @@map("micro_habits")
 }
 
 /// Pergunta focal do dia (A Única Coisa): a resposta e o bloco escolhido para ela.

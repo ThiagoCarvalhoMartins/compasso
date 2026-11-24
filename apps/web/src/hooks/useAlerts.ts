@@ -17,16 +17,20 @@ interface Options {
   started: boolean;
   /** Silenciado temporariamente até este instante (RF04.10). */
   mutedUntil: number | null;
+  /** Título de cada micro-hábito, por id: o alerta de fim lembra do que vem depois do bloco. */
+  habits: Map<string, string>;
 }
 
 /**
  * RF04.7–RF04.9: agenda cada alerta pelo horário exato do evento (setTimeout por evento, não polling)
  * e reagenda ao voltar para a aba (visibilitychange). Som + toast + notificação do navegador.
  */
-export function useAlerts({ date, timezone, blocks, settings, started, mutedUntil }: Options) {
+export function useAlerts({ date, timezone, blocks, settings, started, mutedUntil, habits }: Options) {
   const fired = useRef(new Set<string>());
   const latest = useRef({ settings, mutedUntil });
   latest.current = { settings, mutedUntil };
+  const latestHabits = useRef(habits);
+  latestHabits.current = habits;
 
   useEffect(() => {
     if (!started || !settings.alertsEnabled) return;
@@ -51,7 +55,9 @@ export function useAlerts({ date, timezone, blocks, settings, started, mutedUnti
       const time = `${alert.block.startTime}–${alert.block.endTime}`;
       // Nunca falhe duas vezes: o alerta de início lembra que a última ocorrência não deu.
       const reminder = alert.kind === "start" ? missReminder(alert.block) : null;
-      const body = reminder ? `${time} · ${reminder.message}` : time;
+      // Empilhamento de hábitos: o fim do bloco lembra do micro-hábito que vem em seguida.
+      const habit = alert.kind === "end" && alert.block.microHabitId ? latestHabits.current.get(alert.block.microHabitId) : null;
+      const body = reminder ? `${time} · ${reminder.message}` : habit ? `${time} · Ao terminar: ${habit}` : time;
       // RNF10: todo alerta sonoro tem equivalente visual.
       toast(title, { description: body, duration: 10_000 });
       if (document.visibilityState === "hidden" && "Notification" in window && Notification.permission === "granted") {
