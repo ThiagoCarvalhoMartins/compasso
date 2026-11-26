@@ -78,6 +78,11 @@ export function CompassPage() {
   const tz = data?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const local = zonedNow(now, tz);
 
+  // "Último acesso" do admin: uma marca por abertura da tela. Falha aqui não deve atrapalhar o usuário.
+  useEffect(() => {
+    api.post("/me/seen").catch(() => {});
+  }, []);
+
   // Virada do dia: troca a timeline e zera o contador QP sem refresh.
   useEffect(() => {
     if (data && local.date !== data.date) void qc.invalidateQueries({ queryKey: ["compass"] });

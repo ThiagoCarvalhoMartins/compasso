@@ -32,7 +32,7 @@ import { ROLE_LABEL, STATUS_LABEL, api, formatDateTime, useAdmin } from "../lib"
 /** O Select do Radix não aceita item com valor vazio; este valor representa a opção "Todos". */
 const ALL = "__all__";
 
-type AdminUser = UserDTO & { createdAt: string; lastLoginAt: string | null };
+type AdminUser = UserDTO & { createdAt: string; lastLoginAt: string | null; lastSeenAt: string | null };
 interface Page<T> {
   total: number;
   page: number;
@@ -152,7 +152,7 @@ export function UsersPage() {
                 </TD>
                 <TD>{u.hasGoogle ? (u.hasPassword ? "E-mail + Google" : "Google") : "E-mail"}</TD>
                 <TD>{formatDateTime(u.createdAt)}</TD>
-                <TD>{formatDateTime(u.lastLoginAt)}</TD>
+                <TD>{formatDateTime(u.lastSeenAt)}</TD>
               </TR>
             ))}
             {data && !data.items.length && (
@@ -250,7 +250,7 @@ export function UserDetailPage() {
               ["Data de nascimento", u.birthDate ?? "—"],
               ["Fuso horário", u.timezone],
               ["Cadastro", formatDateTime(u.createdAt)],
-              ["Último acesso", formatDateTime(u.lastLoginAt)],
+              ["Último acesso", formatDateTime(u.lastSeenAt)],
               ["Blocos", u.blocksCount],
               ["Sessões QP", u.qpSessionsCount],
             ].map(([k, v]) => (
