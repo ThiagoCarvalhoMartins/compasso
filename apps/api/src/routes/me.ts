@@ -21,6 +21,12 @@ meRouter.get("/", async (req, res) => {
   res.json(toUserDTO(user));
 });
 
+/** Registra que o usuário abriu a tela do Compasso — é o "Último acesso" exibido no admin. */
+meRouter.post("/seen", async (req, res) => {
+  await prisma.user.update({ where: { id: userId(req) }, data: { lastSeenAt: new Date() } });
+  res.status(204).end();
+});
+
 // RF02.1 / RF02.2
 meRouter.patch("/", async (req, res) => {
   const input = parse(profileUpdateSchema, req.body);

@@ -93,7 +93,7 @@ adminRouter.get("/users", async (req, res) => {
     total,
     page: q.page,
     pageSize: q.pageSize,
-    items: users.map((u) => ({ ...toUserDTO(u), createdAt: u.createdAt, lastLoginAt: u.lastLoginAt })),
+    items: users.map((u) => ({ ...toUserDTO(u), createdAt: u.createdAt, lastLoginAt: u.lastLoginAt, lastSeenAt: u.lastSeenAt })),
   });
 });
 
@@ -108,6 +108,7 @@ adminRouter.get("/users/:id", async (req, res) => {
     ...toUserDTO(user),
     createdAt: user.createdAt,
     lastLoginAt: user.lastLoginAt,
+    lastSeenAt: user.lastSeenAt,
     blocksCount: user._count.blocks,
     qpSessionsCount: user._count.qpSessions,
   });

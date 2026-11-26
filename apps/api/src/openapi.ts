@@ -16,6 +16,7 @@ const routes: Route[] = [
   ["patch", "/me", "Atualiza o perfil", "Perfil"],
   ["delete", "/me", "Exclui a conta (LGPD)", "Perfil"],
   ["get", "/me/export", "Exporta os dados do usuário (LGPD)", "Perfil"],
+  ["post", "/me/seen", "Registra o acesso à tela do Compasso (Último acesso do admin)", "Perfil"],
   ["get", "/me/settings", "Preferências de alertas e duração QP", "Perfil"],
   ["put", "/me/settings", "Atualiza as preferências", "Perfil"],
   ["get", "/categories", "Lista categorias (padrão + do usuário)", "Agenda"],

@@ -44,6 +44,8 @@ model User {
   status          UserStatus @default(ACTIVE)
   emailVerifiedAt DateTime?  @map("email_verified_at")
   lastLoginAt     DateTime?  @map("last_login_at")
+  /// Última vez que o usuário abriu a tela do Compasso (exibido como "Último acesso" no admin).
+  lastSeenAt      DateTime?  @map("last_seen_at")
   deletedAt       DateTime?  @map("deleted_at")
   createdAt       DateTime   @default(now()) @map("created_at")
   updatedAt       DateTime   @updatedAt @map("updated_at")
